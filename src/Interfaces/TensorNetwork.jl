@@ -54,7 +54,7 @@ function rmtensor! end
 function replace_tensor! end
 function replace_ind! end
 
-## contract!
+# TODO contract!, split!
 
 # implementation
 ## `tensors`
@@ -252,8 +252,8 @@ function replace_tensor_inner!(tn, old_tensor, new_tensor, ::DontDelegate)
     @debug "Falling back to the default `replace_tensor_inner!` method"
 
     old_tensor === new_tensor && return tn
-    hastensor(tn, old_tensor) || throw(ArgumentError("old tensor not found in Tensor Network"))
-    hastensor(tn, new_tensor) && throw(ArgumentError("new tensor already exists in Tensor Network"))
+    hastensor(tn, old_tensor) || throw(ArgumentError("old tensor not found"))
+    hastensor(tn, new_tensor) && throw(ArgumentError("new tensor already exists"))
 
     if !isscoped(tn)
         @argcheck issetequal(inds(new_tensor), inds(old_tensor)) "replacing tensor indices don't match"
