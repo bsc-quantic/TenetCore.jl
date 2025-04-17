@@ -24,6 +24,9 @@ function ind end
 function all_tensors end
 function all_inds end
 
+function all_tensors_iter end
+function all_inds_iter end
+
 function hastensor end
 function hasind end
 
@@ -232,18 +235,18 @@ end
 
 # mutating methods
 addtensor_inner!(tn, tensor) = addtensor_inner!(tn, tensor, delegates(TensorNetwork(), tn))
-addtensor_inner!(tn, tensor, ::DelegateTo) = addtensor_inner!(delegate(TensorNetwork(), tn), tensor)
+addtensor_inner!(tn, tensor, ::DelegateTo) = addtensor!(delegate(TensorNetwork(), tn), tensor)
 addtensor_inner!(tn, tensor, ::DontDelegate) = throw(MethodError(addtensor_inner!, (tn, tensor)))
 
 rmtensor_inner!(tn, tensor) = rmtensor_inner!(tn, tensor, delegates(TensorNetwork(), tn))
-rmtensor_inner!(tn, tensor, ::DelegateTo) = rmtensor_inner!(delegate(TensorNetwork(), tn), tensor)
+rmtensor_inner!(tn, tensor, ::DelegateTo) = rmtensor!(delegate(TensorNetwork(), tn), tensor)
 rmtensor_inner!(tn, tensor, ::DontDelegate) = throw(MethodError(rmtensor_inner!, (tn, tensor)))
 
 function replace_tensor_inner!(tn, old_tensor, new_tensor)
     replace_tensor_inner!(tn, old_tensor, new_tensor, delegates(TensorNetwork(), tn))
 end
 function replace_tensor_inner!(tn, old_tensor, new_tensor, ::DelegateTo)
-    replace_tensor_inner!(delegate(TensorNetwork(), tn), old_tensor, new_tensor)
+    replace_tensor!(delegate(TensorNetwork(), tn), old_tensor, new_tensor)
 end
 function replace_tensor_inner!(tn, old_tensor, new_tensor, ::DontDelegate)
     @debug "Falling back to the default `replace_tensor_inner!` method"
@@ -262,7 +265,7 @@ end
 
 replace_ind_inner!(tn, old_ind, new_ind) = replace_ind_inner!(tn, old_ind, new_ind, delegates(TensorNetwork(), tn))
 function replace_ind_inner!(tn, old_ind, new_ind, ::DelegateTo)
-    replace_tensor_inner!(delegate(TensorNetwork(), tn), old_ind, new_ind)
+    replace_ind!(delegate(TensorNetwork(), tn), old_ind, new_ind)
 end
 function replace_ind_inner!(tn, old_ind, new_ind, ::DontDelegate)
     @debug "Falling back to the default `replace_ind_inner!` method"
@@ -280,40 +283,88 @@ function replace_ind_inner!(tn, old_ind, new_ind, ::DontDelegate)
     ############################################################################
 
     @unsafe_region tn for old_tensor in tensors_contain_inds(tn, old_ind)
-        # checkhandle(tn, ReplaceEffect(old_tensor => old_tensor))
+        checkhandle(tn, ReplaceEffect(old_tensor => old_tensor))
         new_tensor = replace(old_tensor, old_ind => new_ind)
         replace_tensor!(tn, old_tensor, new_tensor)
     end
 end
 
+## `addtensor!`
 function addtensor!(tn, tensor)
-    # checkhandle(tn, PushEffect(tensor))
+    checkhandle(tn, PushEffect(tensor))
     hastensor(tn, tensor) && return tn
     addtensor_inner!(tn, tensor)
     handle!(tn, PushEffect(tensor))
     return tn
 end
 
+canhandle(tn, @nospecialize(e::PushEffect{<:Tensor})) = canhandle(tn, e, delegates(TensorNetwork(), tn))
+canhandle(tn, @nospecialize(e::PushEffect{<:Tensor}), ::DelegateTo) = canhandle(delegate(TensorNetwork(), tn), e)
+canhandle(tn, @nospecialize(e::PushEffect{<:Tensor}), ::DontDelegate) = false
+
+handle!(tn, @nospecialize(e::PushEffect{<:Tensor})) = handle!(tn, e, delegates(TensorNetwork(), tn))
+handle!(tn, @nospecialize(e::PushEffect{<:Tensor}), ::DelegateTo) = handle!(delegate(TensorNetwork(), tn), e)
+function handle!(_, @nospecialize(e::PushEffect{T}), ::DontDelegate) where {T<:Tensor}
+    error("`PushEffect{$T}` was emitted thinking it could be handled but no handler is defined")
+end
+
+## `rmtensor!`
 function rmtensor!(tn, tensor)
-    # checkhandle(tn, DeleteEffect(tensor))
+    checkhandle(tn, DeleteEffect(tensor))
     hastensor(tn, tensor) || throw(ArgumentError("Tensor not found in Tensor Network"))
     rmtensor_inner!(tn, tensor)
     handle!(tn, DeleteEffect(tensor))
     return tn
 end
+canhandle(tn, @nospecialize(e::DeleteEffect{<:Tensor})) = canhandle(tn, e, delegates(TensorNetwork(), tn))
+canhandle(tn, @nospecialize(e::DeleteEffect{<:Tensor}), ::DelegateTo) = canhandle(delegate(TensorNetwork(), tn), e)
+canhandle(tn, @nospecialize(e::DeleteEffect{<:Tensor}), ::DontDelegate) = false
 
+handle!(tn, @nospecialize(e::DeleteEffect{<:Tensor})) = handle!(tn, e, delegates(TensorNetwork(), tn))
+handle!(tn, @nospecialize(e::DeleteEffect{<:Tensor}), ::DelegateTo) = handle!(delegate(TensorNetwork(), tn), e)
+function handle!(_, @nospecialize(e::DeleteEffect{T}), ::DontDelegate) where {T<:Tensor}
+    error("`DeleteEffect{$T}` was emitted thinking it could be handled but no handler is defined")
+end
+
+## `replace_tensor!`
 function replace_tensor!(tn, old_tensor, new_tensor)
-    # checkhandle(tn, ReplaceEffect(old_tensor, new_tensor))
+    checkhandle(tn, ReplaceEffect(old_tensor, new_tensor))
     replace_tensor_inner!(tn, old_tensor, new_tensor)
     handle!(tn, ReplaceEffect(old_tensor, new_tensor))
     return tn
 end
 
+canhandle(tn, @nospecialize(e::ReplaceEffect{<:Tensor,<:Tensor})) = canhandle(tn, e, delegates(TensorNetwork(), tn))
+function canhandle(tn, @nospecialize(e::ReplaceEffect{<:Tensor,<:Tensor}), ::DelegateTo)
+    canhandle(delegate(TensorNetwork(), tn), e)
+end
+canhandle(tn, @nospecialize(e::ReplaceEffect{<:Tensor,<:Tensor}), ::DontDelegate) = false
+
+handle!(tn, @nospecialize(e::ReplaceEffect{<:Tensor,<:Tensor})) = handle!(tn, e, delegates(TensorNetwork(), tn))
+function handle!(tn, @nospecialize(e::ReplaceEffect{<:Tensor,<:Tensor}), ::DelegateTo)
+    handle!(delegate(TensorNetwork(), tn), e)
+end
+function handle!(_, @nospecialize(e::ReplaceEffect{Told,Tnew}), ::DontDelegate) where {Told<:Tensor,Tnew<:Tensor}
+    error("`ReplaceEffect{$Told,$Tnew}` was emitted thinking it could be handled but no handler is defined")
+end
+
+## `replace_ind!`
 function replace_ind!(tn, old_ind, new_ind)
-    # checkhandle(tn, ReplaceEffect(old_ind, new_ind))
+    checkhandle(tn, ReplaceEffect(old_ind, new_ind))
     replace_ind_inner!(tn, old_ind, new_ind)
     handle!(tn, ReplaceEffect(old_ind, new_ind))
     return tn
+end
+canhandle(tn, @nospecialize(e::ReplaceEffect{<:Index,<:Index})) = canhandle(tn, e, delegates(TensorNetwork(), tn))
+function canhandle(tn, @nospecialize(e::ReplaceEffect{<:Index,<:Index}), ::DelegateTo)
+    canhandle(delegate(TensorNetwork(), tn), e)
+end
+canhandle(tn, @nospecialize(e::ReplaceEffect{<:Index,<:Index}), ::DontDelegate) = false
+
+handle!(tn, @nospecialize(e::ReplaceEffect{<:Index,<:Index})) = handle!(tn, e, delegates(TensorNetwork(), tn))
+handle!(tn, @nospecialize(e::ReplaceEffect{<:Index,<:Index}), ::DelegateTo) = handle!(delegate(TensorNetwork(), tn), e)
+function handle!(_, @nospecialize(e::ReplaceEffect{Iold,Inew}), ::DontDelegate) where {Iold<:Index,Inew<:Index}
+    error("`PushEffect{$Iold,$Inew}` was emitted thinking it could be handled but no handler is defined")
 end
 
 function replace_inds!(tn, old_new)
@@ -556,7 +607,7 @@ end
 
 # replace tensor with a TensorNetwork
 function Base.replace!(tn::AbstractTensorNetwork, old_new::Pair{<:Tensor,<:AbstractTensorNetwork})
-    # checkhandle(tn, ReplaceEffect(old_new))
+    checkhandle(tn, ReplaceEffect(old_new))
 
     old, new = old_new
     @argcheck issetequal(inds(new; set=:open), inds(old)) "indices don't match"
@@ -567,7 +618,7 @@ function Base.replace!(tn::AbstractTensorNetwork, old_new::Pair{<:Tensor,<:Abstr
         addtensor_inner!(tn, tensor)
     end
     rmtensor_inner!(tn, old)
-    # handle!(tn, ReplaceEffect(old_new))
+    handle!(tn, ReplaceEffect(old_new))
 
     return tn
 end

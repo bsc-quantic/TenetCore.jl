@@ -13,11 +13,15 @@ abstract type Effect end
 Returns `true` if `x` can handle the effect.
 """
 canhandle(::T, ::E) where {T,E} = canhandle(T, E)
-canhandle(::Type{T}, ::Type{E}) where {T,E} = hasmethod(handle!, Tuple{T,E})
+canhandle(::Type{T}, ::Type{E}) where {T,E} = false # hasmethod(handle!, Tuple{T,E})
+
+struct MissingEffectHandlerException{T,E} <: Core.Exception end
+MissingEffectHandlerException(::Type{T}, ::Type{E}) where {T,E} = MissingEffectHandlerException{T,E}()
+Base.showerror(io::IO, ::MissingEffectHandlerException{T,E}) where {T,E} = print(io, "$T cannot handle effect $E")
 
 function checkhandle(x::T, effect::E) where {T,E}
     if !canhandle(x, effect)
-        throw(ArgumentError("$T cannot handle effect $E"))
+        throw(MissingEffectHandlerException(T, E))
     end
 end
 

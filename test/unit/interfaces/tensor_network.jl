@@ -21,6 +21,9 @@ function TenetNext.addtensor_inner!(tn::MockTensorNetwork, tensor::Tensor)
     return tn
 end
 
+TenetNext.canhandle(::MockTensorNetwork, ::TenetNext.PushEffect{<:Tensor}) = true
+TenetNext.handle!(::MockTensorNetwork, ::TenetNext.PushEffect{<:Tensor}) = nothing
+
 function TenetNext.rmtensor_inner!(tn::MockTensorNetwork, tensor::Tensor)
     if !hastensor(tn, tensor)
         throw(ArgumentError("tensor not found in the network"))
@@ -28,6 +31,15 @@ function TenetNext.rmtensor_inner!(tn::MockTensorNetwork, tensor::Tensor)
     deleteat!(tn.tensors, findfirst(x -> x === tensor, tn.tensors))
     return tn
 end
+
+TenetNext.canhandle(::MockTensorNetwork, ::TenetNext.DeleteEffect{<:Tensor}) = true
+TenetNext.handle!(::MockTensorNetwork, ::TenetNext.DeleteEffect{<:Tensor}) = nothing
+
+TenetNext.canhandle(::MockTensorNetwork, ::TenetNext.ReplaceEffect{<:Tensor,<:Tensor}) = true
+TenetNext.handle!(::MockTensorNetwork, ::TenetNext.ReplaceEffect{<:Tensor,<:Tensor}) = nothing
+
+TenetNext.canhandle(::MockTensorNetwork, ::TenetNext.ReplaceEffect{<:Index,<:Index}) = true
+TenetNext.handle!(::MockTensorNetwork, ::TenetNext.ReplaceEffect{<:Index,<:Index}) = nothing
 
 # UnsafeScopeable implementation
 TenetNext.get_unsafe_scope(tn::MockTensorNetwork) = tn.unsafe_scope[]
