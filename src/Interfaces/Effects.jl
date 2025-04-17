@@ -28,6 +28,9 @@ Handle the `effect` on `x`. By default, does nothing.
 """
 function handle! end
 
+# by default, ignore effects
+handle!(_, e) = nothing
+
 """
     PushEffect{F} <: Effect
 

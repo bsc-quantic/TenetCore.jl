@@ -2,7 +2,6 @@ using Base: AbstractVecOrTuple
 using ArgCheck
 using ValSplit
 using QuantumTags
-using Muscle: Tensor, Index
 using Graphs: Graphs
 using EinExprs: EinExprs
 
@@ -44,10 +43,11 @@ function inds_parallel_to end
 # mutating methods
 function addtensor_inner! end
 function rmtensor_inner! end
+function replace_tensor_inner! end
+function replace_ind_inner! end
 
 function addtensor! end
 function rmtensor! end
-
 function replace_tensor! end
 function replace_ind! end
 
@@ -98,7 +98,7 @@ hastensor(tn, tensor) = hastensor(tn, tensor, delegates(TensorNetwork(), tn))
 hastensor(tn, tensor, ::DelegateTo) = hastensor(delegate(TensorNetwork(), tn), tensor)
 function hastensor(tn, tensor, ::DontDelegate)
     @debug "Falling back to default `hastensor` method"
-    tensor ∈ all_tensors(tn)
+    any(Base.Fix1(===, tensor), all_tensors(tn))
 end
 
 ## `hasind`
@@ -111,25 +111,34 @@ end
 
 ## `ntensors`
 ntensors(tn; kwargs...) = ntensors(sort_nt(values(kwargs)), tn)
-ntensors(kwargs::NamedTuple, tn) = length(tensors(kwargs, tn))
+
+function ntensors(kwargs::NamedTuple, tn)
+    @debug "Falling back to default `ntensors` method"
+    length(tensors(kwargs, tn))
+end
 
 ### dispatch due to performance reasons: see implementation in src/GenericTensorNetwork.jl
 ntensors(::@NamedTuple{}, tn) = ntensors((;), tn, delegates(TensorNetwork(), tn))
 ntensors(::@NamedTuple{}, tn, ::DelegateTo) = ntensors(delegate(TensorNetwork(), tn))
-function ntensors(::@NamedTuple{}, tn, _)
+function ntensors(::@NamedTuple{}, tn, ::DontDelegate)
     @debug "Falling back to default `ntensors` method"
-    length(tensors(tn))
+    length(all_tensors(tn))
 end
 
 ## `ninds`
 ninds(tn; kwargs...) = ninds(sort_nt(values(kwargs)), tn)
 
-### dispatch due to performance reasons: see implementation in src/GenericTensorNetwork.jl
-ninds(::@NamedTuple{}, tn) = ninds((;), tn, delegates(TensorNetwork(), tn))
-ninds(::@NamedTuple{}, tn, ::DelegateTo) = ninds((;), delegate(TensorNetwork(), tn))
 function ninds(kwargs::NamedTuple, tn)
     @debug "Falling back to default `ninds` method"
     length(inds(kwargs, tn))
+end
+
+### dispatch due to performance reasons: see implementation in src/GenericTensorNetwork.jl
+ninds(::@NamedTuple{}, tn) = ninds((;), tn, delegates(TensorNetwork(), tn))
+ninds(::@NamedTuple{}, tn, ::DelegateTo) = ninds((;), delegate(TensorNetwork(), tn))
+function ninds(::@NamedTuple{}, tn, ::DontDelegate)
+    @debug "Falling back to default `ninds` method"
+    length(all_inds(tn))
 end
 
 ## `tensors_with_inds`
@@ -205,7 +214,7 @@ function size_inds(tn, ::DontDelegate)
     sizes = Dict{Index,Int}()
     for tensor in tensors(tn)
         for ind in inds(tensor)
-            sizes[ind] = get(sizes, ind, 0) + 1
+            sizes[ind] = size(tensor, ind)
         end
     end
     return sizes
@@ -216,26 +225,63 @@ size_ind(tn, i) = size_ind(tn, i, delegates(TensorNetwork(), tn))
 size_ind(tn, i, ::DelegateTo) = size_ind(delegate(TensorNetwork(), tn), i)
 function size_ind(tn, i, ::DontDelegate)
     @debug "Falling back to default `size_ind` method"
-    tensor = findfirst(t -> i ∈ inds(tensor), tensors(tn))
-    @argcheck !isnothing(tensor) "Index $i not found in the Tensor Network"
-    return size_ind(tensor, i)
+    _tensors = tensors(tn; contain=i)
+    @argcheck !isempty(_tensors) "Index $i not found in the Tensor Network"
+    return size(first(_tensors), i)
 end
 
 # mutating methods
-addtensor_inner!(tn, tensor; kwargs...) = addtensor_inner!(tn, tensor, delegates(TensorNetwork(), tn), kwargs...)
+addtensor_inner!(tn, tensor) = addtensor_inner!(tn, tensor, delegates(TensorNetwork(), tn))
 addtensor_inner!(tn, tensor, ::DelegateTo) = addtensor_inner!(delegate(TensorNetwork(), tn), tensor)
 addtensor_inner!(tn, tensor, ::DontDelegate) = throw(MethodError(addtensor_inner!, (tn, tensor)))
 
-rmtensor_inner!(tn, tensor; kwargs...) = rmtensor_inner!(tn, tensor, delegates(TensorNetwork(), tn), kwargs...)
+rmtensor_inner!(tn, tensor) = rmtensor_inner!(tn, tensor, delegates(TensorNetwork(), tn))
 rmtensor_inner!(tn, tensor, ::DelegateTo) = rmtensor_inner!(delegate(TensorNetwork(), tn), tensor)
 rmtensor_inner!(tn, tensor, ::DontDelegate) = throw(MethodError(rmtensor_inner!, (tn, tensor)))
 
-replace_tensor_inner!(tn, old_tensor, new_tensor; kwargs...) = replace_tensor_inner!(tn, old_tensor, new_tensor, delegates(TensorNetwork(), tn), kwargs...)
+replace_tensor_inner!(tn, old_tensor, new_tensor) = replace_tensor_inner!(tn, old_tensor, new_tensor, delegates(TensorNetwork(), tn))
 replace_tensor_inner!(tn, old_tensor, new_tensor, ::DelegateTo) = replace_tensor_inner!(delegate(TensorNetwork(), tn), old_tensor, new_tensor)
-replace_tensor_inner!(tn, old_tensor, new_tensor, ::DontDelegate) = throw(MethodError(replace_tensor_inner!, (tn, old_tensor, new_tensor)))
+function replace_tensor_inner!(tn, old_tensor, new_tensor, ::DontDelegate)
+    @debug "Falling back to the default `replace_tensor_inner!` method"
 
-function addtensor!(tn, tensor; kwargs...)
-    checkhandle(tn, PushEffect(tensor))
+    old_tensor === new_tensor && return tn
+    hastensor(tn, old_tensor) || throw(ArgumentError("old tensor not found in Tensor Network"))
+    hastensor(tn, new_tensor) && throw(ArgumentError("new tensor already exists in Tensor Network"))
+
+    if !isscoped(tn)
+        @argcheck issetequal(inds(new_tensor), inds(old_tensor)) "replacing tensor indices don't match"
+    end
+
+    rmtensor!(tn, old_tensor)
+    addtensor!(tn, new_tensor)
+end
+
+replace_ind_inner!(tn, old_ind, new_ind) = replace_ind_inner!(tn, old_ind, new_ind, delegates(TensorNetwork(), tn))
+replace_ind_inner!(tn, old_ind, new_ind, ::DelegateTo) = replace_tensor_inner!(delegate(TensorNetwork(), tn), old_ind, new_ind)
+function replace_ind_inner!(tn, old_ind, new_ind, ::DontDelegate)
+    @debug "Falling back to the default `replace_ind_inner!` method"
+
+    @argcheck hasind(tn, old_ind) "index $old_ind does not exist"
+    old_ind == new_ind && return tn
+    @argcheck !hasind(tn, new_ind) "index $new_ind is already present"
+
+    ############## legacy comment which might not be true anymore ##############
+    # NOTE `copy` because collection underneath is mutated
+    # for old_tensor in copy(tensors(tn; contain=old_ind))
+    # ...
+    # NOTE do not `delete!` before `push!` as indices can be lost due to `tryprune!`
+    # tryprune!(tn, old_ind) => `tryprune!` should be called on `handle!`
+    ############################################################################
+
+    @unsafe_region tn for old_tensor in tensors_contain_inds(tn, old_ind)
+        # checkhandle(tn, ReplaceEffect(old_tensor => old_tensor))
+        new_tensor = replace(old_tensor, old_ind => new_ind)
+        replace_tensor!(tn, old_tensor, new_tensor)
+    end
+end
+
+function addtensor!(tn, tensor)
+    # checkhandle(tn, PushEffect(tensor))
     hastensor(tn, tensor) && return tn
     addtensor_inner!(tn, tensor)
     handle!(tn, PushEffect(tensor))
@@ -243,30 +289,24 @@ function addtensor!(tn, tensor; kwargs...)
 end
 
 function rmtensor!(tn, tensor)
-    checkhandle(tn, DeleteEffect(tensor))
+    # checkhandle(tn, DeleteEffect(tensor))
+    hastensor(tn, tensor) || throw(ArgumentError("Tensor not found in Tensor Network"))
     rmtensor_inner!(tn, tensor)
     handle!(tn, DeleteEffect(tensor))
     return tn
 end
 
+function replace_tensor!(tn, old_tensor, new_tensor)
+    # checkhandle(tn, ReplaceEffect(old_tensor, new_tensor))
+    replace_tensor_inner!(tn, old_tensor, new_tensor)
+    handle!(tn, ReplaceEffect(old_tensor, new_tensor))
+    return tn
+end
+
 function replace_ind!(tn, old_ind, new_ind)
-    checkhandle(tn, ReplaceEffect(old_ind, new_ind))
-    @argcheck old_ind ∈ tn "index $old_ind does not exist"
-    old_ind == new_ind && return tn
-    @argcheck new_ind ∉ tn "index $new_ind is already present"
-
-    # NOTE `copy` because collection underneath is mutated
-    for old_tensor in copy(tensors(tn; contain=old_ind))
-        checkhandle(tn, ReplaceEffect(old_tensor => old_tensor))
-
-        # NOTE do not `delete!` before `push!` as indices can be lost due to `tryprune!`
-        new_tensor = replace(old_tensor, old_ind => new_ind)
-        addtensor_inner!(tn, new_tensor)
-        rmtensor_inner!(tn, old_tensor)
-        handle!(tn, ReplaceEffect(old_tensor, new_tensor))
-    end
-    tryprune!(tn, old_ind)
-    handle!(tn, ReplaceEffect(old_ind => new_ind))
+    # checkhandle(tn, ReplaceEffect(old_ind, new_ind))
+    replace_ind_inner!(tn, old_ind, new_ind)
+    handle!(tn, ReplaceEffect(old_ind, new_ind))
     return tn
 end
 
@@ -304,30 +344,13 @@ function replace_inds!(tn, old_new)
     return tn
 end
 
-function replace_tensor!(tn, old_tensor, new_tensor)
-    checkhandle(tn, ReplaceEffect(old_tensor, new_tensor))
-
-    old_tensor === new_tensor && return tn
-    hastensor(tn, old_tensor) || throw(ArgumentError("old tensor not found in Tensor Network"))
-
-    if !isscoped(tn)
-        @argcheck issetequal(inds(new_tensor), inds(old_tensor)) "replacing tensor indices don't match"
-    end
-
-    addtensor_inner!(tn, new_tensor)
-    rmtensor_inner!(tn, old_tensor)
-    handle!(tn, ReplaceEffect(old_tensor, new_tensor))
-
-    return tn
-end
-
 # derived methods
 # TODO Base.copy ==> copy_tn
 
 Base.summary(io::IO, tn::T) where {T<:AbstractTensorNetwork} = print(io, "$(ntensors(tn))-tensors $T")
 
 function Base.show(io::IO, tn::T) where {T<:AbstractTensorNetwork}
-    return print(io, "$T (#tensors=$(ntensors(tn)), #inds=$(ninds(tn)), #tags=$(ntags(tn)))")
+    return print(io, "$T (#tensors=$(ntensors(tn)), #inds=$(ninds(tn)))")
 end
 
 Base.in(i::Index, tn::AbstractTensorNetwork) = hasind(tn, i)
@@ -492,12 +515,7 @@ Remove a [`Tensor`](@ref) from the Tensor Network.
 
     [`Tensor`](@ref)s are identified in a Tensor Network by their `objectid`, so you must pass the same object and not a copy.
 """
-function Base.delete!(tn::AbstractTensorNetwork, t::Tensor)
-    checkhandle(tn, DeleteEffect(t))
-    rmtensor_inner!(tn, t)
-    handle!(tn, DeleteEffect(t))
-    return tn
-end
+Base.delete!(tn::AbstractTensorNetwork, tensor::Tensor) = rmtensor!(tn, tensor)
 
 """
     replace!(tn::AbstractTensorNetwork, old => new...)
@@ -530,7 +548,7 @@ end
 
 # replace tensor with a TensorNetwork
 function Base.replace!(tn::AbstractTensorNetwork, old_new::Pair{<:Tensor,<:AbstractTensorNetwork})
-    checkhandle(tn, ReplaceEffect(old_new))
+    # checkhandle(tn, ReplaceEffect(old_new))
 
     old, new = old_new
     @argcheck issetequal(inds(new; set=:open), inds(old)) "indices don't match"
@@ -541,7 +559,7 @@ function Base.replace!(tn::AbstractTensorNetwork, old_new::Pair{<:Tensor,<:Abstr
         addtensor_inner!(tn, tensor)
     end
     rmtensor_inner!(tn, old)
-    handle!(tn, ReplaceEffect(old_new))
+    # handle!(tn, ReplaceEffect(old_new))
 
     return tn
 end

@@ -2,21 +2,34 @@
 struct UnsafeScopeable <: Interface end
 
 # interface
+function is_scopeable end
 function get_unsafe_scope end
 function set_unsafe_scope! end
 function checksizes end
+function inscope end
 
-get_unsafe_scope(tn) = get_unsafe_scope(delegates(UnsafeScopeable(), tn), tn)
-get_unsafe_scope(::DontDelegate, tn) = throw(MethodError(get_unsafe_scope, (typeof(tn),)))
-get_unsafe_scope(::DelegateTo, tn) = get_unsafe_scope(tn, delegate(UnsafeScopeable(), tn))
+function is_scopeable(tn::T) where {T}
+    if delegates(UnsafeScopeable(), tn) isa DelegateTo
+        true
+        # elseif hasmethod(get_unsafe_scope, Tuple{T}) && hasmethod(set_unsafe_scope!, Tuple{T,UnsafeScope})
+        #     true
+    else
+        false
+    end
+end
 
-set_unsafe_scope!(tn, uc) = set_unsafe_scope!(delegates(UnsafeScopeable(), tn), tn, uc)
-set_unsafe_scope!(::DontDelegate, _, _) = throw(MethodError(set_unsafe_scope!, (typeof(tn), typeof(uc))))
-set_unsafe_scope!(::DelegateTo, tn, uc) = set_unsafe_scope!(tn, delegate(UnsafeScopeable(), tn), uc)
+get_unsafe_scope(tn) = get_unsafe_scope(tn, delegates(UnsafeScopeable(), tn))
+get_unsafe_scope(tn, ::DelegateTo) = get_unsafe_scope(tn, delegate(UnsafeScopeable(), tn))
+get_unsafe_scope(_, ::DontDelegate) = nothing
+
+set_unsafe_scope!(tn, uc) = set_unsafe_scope!(tn, uc, delegates(UnsafeScopeable(), tn))
+set_unsafe_scope!(tn, uc, ::DelegateTo) = set_unsafe_scope!(tn, delegate(UnsafeScopeable(), tn), uc)
+set_unsafe_scope!(tn, uc, ::DontDelegate) = throw(MethodError(set_unsafe_scope!, (tn, uc)))
 
 checksizes(tn) = checksizes(tn, delegates(UnsafeScopeable(), tn))
-checksizes(::DelegateTo, tn) = checksizes(tn, delegate(UnsafeScopeable(), tn))
-function checksizes(::DontDelegate, tn)
+checksizes(tn, ::DelegateTo) = checksizes(tn, delegate(UnsafeScopeable(), tn))
+function checksizes(tn, ::DontDelegate)
+    @debug "Falling back to default `checksizes` method"
     sizedict = size(tn)
     return all(tensors(tn)) do tensor
         return all(enumerate(inds(tensor))) do (i, ind)
@@ -40,7 +53,7 @@ Base.push!(uc::UnsafeScope, tn) = push!(uc.refs, WeakRef(tn))
 inscope(tn, uc::UnsafeScope) = tn ∈ uc.refs
 inscope(tn, ::Nothing) = false
 
-isscoped(tn) = inscope(tn, get_unsafe_scope(tn))
+isscoped(tn) = !isnothing(get_unsafe_scope(tn))
 
 macro unsafe_region(tn, block)
     return esc(
@@ -48,11 +61,11 @@ macro unsafe_region(tn, block)
             local old = copy($tn)
 
             # Create a new UnsafeScope and set it to the current tn
-            local _uc = Tenet.UnsafeScope()
-            Tenet.set_unsafe_scope!($tn, _uc)
+            local _uc = $UnsafeScope()
+            $set_unsafe_scope!($tn, _uc)
 
             # Register the tensor network in the UnsafeScope
-            push!(Tenet.get_unsafe_scope($tn).refs, WeakRef($tn))
+            push!($get_unsafe_scope($tn).refs, WeakRef($tn))
 
             e = nothing
             try
@@ -63,13 +76,13 @@ macro unsafe_region(tn, block)
             finally
                 if isnothing(e)
                     # Perform checks of registered tensor networks
-                    for ref in values(Tenet.get_unsafe_scope($tn))
-                        if !isnothing(ref) && ref ∈ Tenet.get_unsafe_scope($tn).refs
-                            if !Tenet.checksizes(ref)
+                    for ref in values($get_unsafe_scope($tn))
+                        if !isnothing(ref) && ref ∈ $get_unsafe_scope($tn).refs
+                            if !$checksizes(ref)
                                 $tn = old
 
                                 # Set `unsafe` field to `nothing`
-                                Tenet.set_unsafe_scope!($tn, nothing)
+                                $set_unsafe_scope!($tn, nothing)
 
                                 throw(DimensionMismatch("Inconsistent size of indices"))
                             end
