@@ -1,0 +1,7 @@
+[deps]
+SafeTestsets = "1bc83da4-3b8d-516f-aca4-4fe02f6d838f"
+TenetNext = "2cc23cfe-e55e-4940-9d06-ab16fa76dba6"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[sources]
+TenetNext = {path = ".."}
