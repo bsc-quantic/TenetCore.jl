@@ -223,4 +223,3 @@ function replace_tag_inner!(tn, old_tag::Link, new_tag::Link)
     untag_inner!(tn, old_tag)
     tag_inner!(tn, ind, new_tag)
 end
-

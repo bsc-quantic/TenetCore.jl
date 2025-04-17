@@ -41,8 +41,7 @@ function GenericTensorNetwork(tensors; unsafe::Union{Nothing,UnsafeScope}=nothin
     if isnothing(unsafe)
         for ind in keys(indmap)
             dims = map(tensor -> size(tensor, ind), indmap[ind])
-            length(unique(dims)) == 1 ||
-                throw(DimensionMismatch("Index $(ind) has inconsistent dimension: $(dims)"))
+            length(unique(dims)) == 1 || throw(DimensionMismatch("Index $(ind) has inconsistent dimension: $(dims)"))
         end
     end
 
@@ -164,6 +163,8 @@ function rmtensor_inner!(tn::GenericTensorNetwork, tensor::Tensor)
 
     return tn
 end
+
+# function replace_tensor_inner!(tn, )
 
 function tryprune!(tn::GenericTensorNetwork, i::Index)
     if hasind(tn, i) && isempty(tn.indmap[i])

@@ -239,8 +239,12 @@ rmtensor_inner!(tn, tensor) = rmtensor_inner!(tn, tensor, delegates(TensorNetwor
 rmtensor_inner!(tn, tensor, ::DelegateTo) = rmtensor_inner!(delegate(TensorNetwork(), tn), tensor)
 rmtensor_inner!(tn, tensor, ::DontDelegate) = throw(MethodError(rmtensor_inner!, (tn, tensor)))
 
-replace_tensor_inner!(tn, old_tensor, new_tensor) = replace_tensor_inner!(tn, old_tensor, new_tensor, delegates(TensorNetwork(), tn))
-replace_tensor_inner!(tn, old_tensor, new_tensor, ::DelegateTo) = replace_tensor_inner!(delegate(TensorNetwork(), tn), old_tensor, new_tensor)
+function replace_tensor_inner!(tn, old_tensor, new_tensor)
+    replace_tensor_inner!(tn, old_tensor, new_tensor, delegates(TensorNetwork(), tn))
+end
+function replace_tensor_inner!(tn, old_tensor, new_tensor, ::DelegateTo)
+    replace_tensor_inner!(delegate(TensorNetwork(), tn), old_tensor, new_tensor)
+end
 function replace_tensor_inner!(tn, old_tensor, new_tensor, ::DontDelegate)
     @debug "Falling back to the default `replace_tensor_inner!` method"
 
@@ -257,7 +261,9 @@ function replace_tensor_inner!(tn, old_tensor, new_tensor, ::DontDelegate)
 end
 
 replace_ind_inner!(tn, old_ind, new_ind) = replace_ind_inner!(tn, old_ind, new_ind, delegates(TensorNetwork(), tn))
-replace_ind_inner!(tn, old_ind, new_ind, ::DelegateTo) = replace_tensor_inner!(delegate(TensorNetwork(), tn), old_ind, new_ind)
+function replace_ind_inner!(tn, old_ind, new_ind, ::DelegateTo)
+    replace_tensor_inner!(delegate(TensorNetwork(), tn), old_ind, new_ind)
+end
 function replace_ind_inner!(tn, old_ind, new_ind, ::DontDelegate)
     @debug "Falling back to the default `replace_ind_inner!` method"
 
@@ -426,7 +432,7 @@ Return a copy of the Tensor Network where `index` has been projected to dimensio
 
 See also: [`view`](@ref), [`slice!`](@ref).
 """
-Base.selectdim(tn::AbstractTensorNetwork, index::Index, i) = @view tn[index=>i]
+Base.selectdim(tn::AbstractTensorNetwork, index::Index, i) = @view tn[index => i]
 
 """
     view(tn, index => i...)
@@ -541,7 +547,9 @@ function Base.replace!(tn::AbstractTensorNetwork, old_new::Pair{<:Tensor,<:Tenso
 end
 
 # rename a collection of indices
-function Base.replace!(tn::AbstractTensorNetwork, old_new::Base.AbstractVecOrTuple{Pair{Ia,Ib}}) where {Ia<:Index,Ib<:Index}
+function Base.replace!(
+    tn::AbstractTensorNetwork, old_new::Base.AbstractVecOrTuple{Pair{Ia,Ib}}
+) where {Ia<:Index,Ib<:Index}
     replace_inds!(tn, old_new)
     return tn
 end

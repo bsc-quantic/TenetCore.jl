@@ -33,11 +33,8 @@ end
 TenetNext.get_unsafe_scope(tn::MockTensorNetwork) = tn.unsafe_scope[]
 TenetNext.set_unsafe_scope!(tn::MockTensorNetwork, uc) = tn.unsafe_scope[] = uc
 
-
 mock_tensors = [
-    Tensor(rand(2, 3), Index.([:i, :j])),
-    Tensor(rand(3, 4), Index.([:j, :k])),
-    Tensor(rand(3, 4), Index.([:j, :k])),
+    Tensor(rand(2, 3), Index.([:i, :j])), Tensor(rand(3, 4), Index.([:j, :k])), Tensor(rand(3, 4), Index.([:j, :k]))
 ]
 
 mock_tn = MockTensorNetwork(mock_tensors)
@@ -83,11 +80,7 @@ end
 end
 
 @testset "size_ind(s)" begin
-    @test size_inds(mock_tn) == Dict{Index,Int}(
-        Index(:i) => 2,
-        Index(:j) => 3,
-        Index(:k) => 4,
-    )
+    @test size_inds(mock_tn) == Dict{Index,Int}(Index(:i) => 2, Index(:j) => 3, Index(:k) => 4)
 
     @test size_ind(mock_tn, Index(:i)) == 2
     @test size_ind(mock_tn, Index(:j)) == 3
@@ -98,28 +91,16 @@ end
     # `with_inds` returns the tensors with the exact same indices
     @test isempty(tensors_with_inds(mock_tn, [Index(:i)]))
 
-    @test issetequal(
-        tensors_with_inds(mock_tn, [Index(:i), Index(:j)]),
-        [mock_tensors[1]],
-    )
+    @test issetequal(tensors_with_inds(mock_tn, [Index(:i), Index(:j)]), [mock_tensors[1]])
 
     # order doesn't matter
-    @test issetequal(
-        tensors_with_inds(mock_tn, [Index(:j), Index(:i)]),
-        [mock_tensors[1]],
-    )
+    @test issetequal(tensors_with_inds(mock_tn, [Index(:j), Index(:i)]), [mock_tensors[1]])
 
     # there can be more than one tensor with the same indices
-    @test issetequal(
-        tensors_with_inds(mock_tn, [Index(:j), Index(:k)]),
-        [mock_tensors[2], mock_tensors[3]],
-    )
+    @test issetequal(tensors_with_inds(mock_tn, [Index(:j), Index(:k)]), [mock_tensors[2], mock_tensors[3]])
 
     # and again, order doesn't matter
-    @test issetequal(
-        tensors_with_inds(mock_tn, [Index(:k), Index(:j)]),
-        [mock_tensors[2], mock_tensors[3]],
-    )
+    @test issetequal(tensors_with_inds(mock_tn, [Index(:k), Index(:j)]), [mock_tensors[2], mock_tensors[3]])
 
     # returning nothing should be type-stable
     @test isempty(tensors_with_inds(mock_tn, [Index(:not_index)]))
@@ -128,38 +109,20 @@ end
 
 @testset "tensors_contain_inds" begin
     # `contain_inds` returns the tensors for which the given indices are a subset
-    @test issetequal(
-        tensors_contain_inds(mock_tn, [Index(:i)]),
-        [mock_tensors[1]],
-    )
+    @test issetequal(tensors_contain_inds(mock_tn, [Index(:i)]), [mock_tensors[1]])
 
-    @test issetequal(
-        tensors_contain_inds(mock_tn, [Index(:j)]),
-        mock_tensors,
-    )
+    @test issetequal(tensors_contain_inds(mock_tn, [Index(:j)]), mock_tensors)
 
-    @test issetequal(
-        tensors_contain_inds(mock_tn, [Index(:k)]),
-        [mock_tensors[2], mock_tensors[3]],
-    )
+    @test issetequal(tensors_contain_inds(mock_tn, [Index(:k)]), [mock_tensors[2], mock_tensors[3]])
 
-    @test issetequal(
-        tensors_contain_inds(mock_tn, [Index(:i), Index(:j)]),
-        [mock_tensors[1]],
-    )
+    @test issetequal(tensors_contain_inds(mock_tn, [Index(:i), Index(:j)]), [mock_tensors[1]])
 
-    @test issetequal(
-        tensors_contain_inds(mock_tn, [Index(:j), Index(:k)]),
-        [mock_tensors[2], mock_tensors[3]],
-    )
+    @test issetequal(tensors_contain_inds(mock_tn, [Index(:j), Index(:k)]), [mock_tensors[2], mock_tensors[3]])
 
     @test isempty(tensors_contain_inds(mock_tn, [Index(:i), Index(:j), Index(:k)]))
 
     # order doesn't matter
-    @test issetequal(
-        tensors_contain_inds(mock_tn, [Index(:j), Index(:i)]),
-        [mock_tensors[1]],
-    )
+    @test issetequal(tensors_contain_inds(mock_tn, [Index(:j), Index(:i)]), [mock_tensors[1]])
 
     # returning nothing should be type-stable
     @test isempty(tensors_contain_inds(mock_tn, [Index(:not_index)]))
@@ -168,36 +131,18 @@ end
 
 @testset "tensors_intersect_inds" begin
     # `intersect_inds` returns the tensors for which the given indices intersect
-    @test issetequal(
-        tensors_intersect_inds(mock_tn, [Index(:i)]),
-        [mock_tensors[1]],
-    )
+    @test issetequal(tensors_intersect_inds(mock_tn, [Index(:i)]), [mock_tensors[1]])
 
-    @test issetequal(
-        tensors_intersect_inds(mock_tn, [Index(:j)]),
-        mock_tensors,
-    )
+    @test issetequal(tensors_intersect_inds(mock_tn, [Index(:j)]), mock_tensors)
 
-    @test issetequal(
-        tensors_intersect_inds(mock_tn, [Index(:j), Index(:i)]),
-        mock_tensors,
-    )
+    @test issetequal(tensors_intersect_inds(mock_tn, [Index(:j), Index(:i)]), mock_tensors)
 
-    @test issetequal(
-        tensors_intersect_inds(mock_tn, [Index(:k)]),
-        [mock_tensors[2], mock_tensors[3]],
-    )
+    @test issetequal(tensors_intersect_inds(mock_tn, [Index(:k)]), [mock_tensors[2], mock_tensors[3]])
 
-    @test issetequal(
-        tensors_intersect_inds(mock_tn, [Index(:i), Index(:j), Index(:k)]),
-        mock_tensors,
-    )
+    @test issetequal(tensors_intersect_inds(mock_tn, [Index(:i), Index(:j), Index(:k)]), mock_tensors)
 
     # order doesn't matter
-    @test issetequal(
-        tensors_intersect_inds(mock_tn, [Index(:i), Index(:j)]),
-        mock_tensors,
-    )
+    @test issetequal(tensors_intersect_inds(mock_tn, [Index(:i), Index(:j)]), mock_tensors)
 
     # returning nothing should be type-stable
     @test isempty(tensors_intersect_inds(mock_tn, [Index(:not_index)]))
