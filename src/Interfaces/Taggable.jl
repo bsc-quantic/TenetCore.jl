@@ -34,13 +34,13 @@ function links_like end
 function link_like end
 
 # mutating methods
-function tag! end
-function untag! end
-function replace_tag! end
-
 function tag_inner! end
 function untag_inner! end
 function replace_tag_inner! end
+
+function tag! end
+function untag! end
+function replace_tag! end
 
 # implementation
 tensor(kwargs::NamedTuple{(:at,)}, tn) = tensor_at(tn, kwargs.at)
@@ -50,15 +50,39 @@ ind(kwargs::NamedTuple{(:at,)}, tn) = ind_at(tn, kwargs.at)
 sites(tn; kwargs...) = sites(sort_nt(values(kwargs)), tn)
 sites(::@NamedTuple{}, tn) = all_sites(tn)
 
+# TODO maybe is good idea to have a function that returns the default comparer method
+# e.g. `is_like_f(::Plug)` returns `is_plug_equal`... so `like` is a trait?
+# TODO important: if we do that, `is_like_f` should be able to compose with parametric types of `Plug` and such
+sites(kwargs::NamedTuple{(:like)}, tn) = sites(tn; by=isequal, kwargs...)
+sites(kwargs::NamedTuple{(:by, :like)}, tn) = sites_like(kwargs.by, tn, kwargs.like)
+
 site(tn; kwargs...) = site(sort_nt(values(kwargs)), tn)
 site(kwargs::NamedTuple{(:at,)}, tn) = site_at(tn, kwargs.at)
+
+# TODO maybe is good idea to have a function that returns the default comparer method
+# e.g. `is_like_f(::Plug)` returns `is_plug_equal`... so `like` is a trait?
+# TODO important: if we do that, `is_like_f` should be able to compose with parametric types of `Plug` and such
+site(kwargs::NamedTuple{(:like)}, tn) = site(tn; by=isequal, kwargs...)
+site(kwargs::NamedTuple{(:by, :like)}, tn) = site_like(kwargs.by, tn, kwargs.like)
 
 ## `links`
 links(tn; kwargs...) = links(sort_nt(values(kwargs)), tn)
 links(::@NamedTuple{}, tn) = all_links(tn)
 
+# TODO maybe is good idea to have a function that returns the default comparer method
+# e.g. `is_like_f(::Plug)` returns `is_plug_equal`... so `like` is a trait?
+# TODO important: if we do that, `is_like_f` should be able to compose with parametric types of `Plug` and such
+links(kwargs::NamedTuple{(:like)}, tn) = links(tn; by=isequal, kwargs...)
+links(kwargs::NamedTuple{(:by, :like)}, tn) = links_like(kwargs.by, tn, kwargs.like)
+
 link(tn; kwargs...) = link(sort_nt(values(kwargs)), tn)
 link(kwargs::NamedTuple{(:at,)}, tn) = link_at(tn, kwargs.at)
+
+# TODO maybe is good idea to have a function that returns the default comparer method
+# e.g. `is_like_f(::Plug)` returns `is_plug_equal`... so `like` is a trait?
+# TODO important: if we do that, `is_like_f` should be able to compose with parametric types of `Plug` and such
+link(kwargs::NamedTuple{(:like)}, tn) = link(tn; by=isequal, kwargs...)
+link(kwargs::NamedTuple{(:by, :like)}, tn) = link_like(kwargs.by, tn, kwargs.like)
 
 ## `all_sites`
 all_sites(tn) = all_sites(tn, delegates(TensorNetwork(), tn))
@@ -83,9 +107,9 @@ end
 ## `all_links_iter`
 ### helper method to avoid allocations on interation
 ### WARN it may mutate stuff
-links_iter(tn) = links_iter(tn, delegates(TensorNetwork(), tn))
-links_iter(tn, ::DelegateTo) = links_iter(delegate(TensorNetwork(), tn))
-links_iter(tn, ::DontDelegate) = links(tn)
+all_links_iter(tn) = all_links_iter(tn, delegates(TensorNetwork(), tn))
+all_links_iter(tn, ::DelegateTo) = all_links_iter(delegate(TensorNetwork(), tn))
+all_links_iter(tn, ::DontDelegate) = links(tn)
 
 ## `hassite`
 hassite(tn, site) = hassite(tn, site, delegates(TensorNetwork(), tn))
@@ -158,19 +182,62 @@ size_link(tn, link) = size_ind(tn, ind_at(tn, link))
 
 ## `sites_like`
 ### TODO might be interesting to dispatch for performance?
-sites_like(isequal_f, tn, ref_site) = filter(Base.Fix1(isequal_f, ref_site), sites_iter(tn))
+sites_like(isequal_f, tn, ref_site) = filter(Base.Fix1(isequal_f, ref_site), all_sites_iter(tn))
 
 ## `site_like`
 ### TODO might be interesting to dispatch for performance?
-site_like(isequal_f, tn, ref_site) = only(sites_like(isequal_f, tn, ref_site))
+function site_like(isequal_f, tn, ref_site)
+    # we use `first` for performance, but `only` would be more correct
+    first(sites_like(isequal_f, tn, ref_site))
+end
 
 ## `links_like`
 ### TODO might be interesting to dispatch for performance?
-links_like(isequal_f, tn, ref_link) = filter(Base.Fix1(isequal_f, ref_link), links_iter(tn))
+links_like(isequal_f, tn, ref_link) = filter(Base.Fix1(isequal_f, ref_link), all_links_iter(tn))
 
 ## `link_like`
 ### TODO might be interesting to dispatch for performance?
-link_like(isequal_f, tn, ref_link) = only(links_like(isequal_f, tn, ref_link))
+function link_like(isequal_f, tn, ref_link)
+    # we use `first` for performance, but `only` would be more correct
+    first(links_like(isequal_f, tn, ref_link))
+end
+
+## `tag_inner!`
+tag_inner!(tn, x, tag) = tag_inner!(tn, x, tag, delegates(TensorNetwork(), tn))
+tag_inner!(tn, x, tag, ::DelegateTo) = tag!(delegate(TensorNetwork(), tn), x, tag)
+tag_inner!(tn, x, tag, ::DontDelegate) = throw(MethodError(tag_inner!, (tn, x, tag)))
+
+## `untag_inner!`
+untag_inner!(tn, tag) = untag_inner!(tn, tag, delegates(TensorNetwork(), tn))
+untag_inner!(tn, tag, ::DelegateTo) = untag!(delegate(TensorNetwork(), tn), tag)
+untag_inner!(tn, tag, ::DontDelegate) = throw(MethodError(untag_inner!, (tn, tag)))
+
+## `replace_tag_inner!`
+replace_tag_inner!(tn, old_tag, new_tag) = replace_tag_inner!(tn, old_tag, new_tag, delegates(Taggable(), tn))
+replace_tag_inner!(tn, old_tag, new_tag, ::DelegateTo) = replace_tag!(tn, old_tag, new_tag)
+function replace_tag_inner!(tn, old_tag::Site, new_tag::Site, ::DontDelegate)
+    @debug "Falling back to the default `replace_tag_inner!` method"
+
+    old_tag == new_tag && return tn
+    hastag(tn, old_tag) || throw(ArgumentError("old tag not found"))
+    hastag(tn, new_tag) && throw(ArgumentError("new tag already exists"))
+
+    tensor = tensor_at(tn, old_tag)
+    untag_inner!(tn, old_tag)
+    tag_inner!(tn, tensor, new_tag)
+end
+
+function replace_tag_inner!(tn, old_tag::Link, new_tag::Link, ::DontDelegate)
+    @debug "Falling back to the default `replace_tag_inner!` method"
+
+    old_tag == new_tag && return tn
+    hastag(tn, old_tag) || throw(ArgumentError("old tag not found"))
+    hastag(tn, new_tag) && throw(ArgumentError("new tag already exists"))
+
+    ind = ind_at(tn, old_tag)
+    untag_inner!(tn, old_tag)
+    tag_inner!(tn, ind, new_tag)
+end
 
 ## `tag!`
 function tag!(tn, x, tag)
@@ -199,27 +266,4 @@ function replace_tag!(tn, old_tag, new_tag)
     replace_tag_inner!(tn, old_tag, new_tag)
     handle!(tn, ReplaceTagEffect(old_tag, new_tag))
     return tn
-end
-
-## `tag_inner!`
-tag_inner!(tn, tag; kwargs...) = tag_inner!(tn, tag, delegates(TensorNetwork(), tn), kwargs...)
-tag_inner!(tn, tag, ::DelegateTo) = tag_inner!(delegate(TensorNetwork(), tn), tag)
-tag_inner!(tn, tag, ::DontDelegate) = throw(MethodError(tag_inner!, (tn, tag)))
-
-## `untag_inner!`
-untag_inner!(tn, tag; kwargs...) = untag_inner!(tn, tag, delegates(TensorNetwork(), tn), kwargs...)
-untag_inner!(tn, tag, ::DelegateTo) = untag_inner!(delegate(TensorNetwork(), tn), tag)
-untag_inner!(tn, tag, ::DontDelegate) = throw(MethodError(untag_inner!, (tn, tag)))
-
-## `replace_tag_inner!`
-function replace_tag_inner!(tn, old_tag::Site, new_tag::Site)
-    tensor = tensor_at(tn, old_tag)
-    untag_inner!(tn, old_tag)
-    tag_inner!(tn, tensor, new_tag)
-end
-
-function replace_tag_inner!(tn, old_tag::Link, new_tag::Link)
-    ind = ind_at(tn, old_tag)
-    untag_inner!(tn, old_tag)
-    tag_inner!(tn, ind, new_tag)
 end
