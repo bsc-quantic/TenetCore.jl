@@ -460,6 +460,7 @@ See also: [`conj!`](@ref).
 """
 function Base.conj(tn::AbstractTensorNetwork)
     tn = copy(tn)
+    # WARN do not call `conj!(tn)` because it will mutate the arrays of the original `tn` too!
     replace!(tn, tensors(tn) .=> conj.(tensors(tn)))
     return tn
 end
