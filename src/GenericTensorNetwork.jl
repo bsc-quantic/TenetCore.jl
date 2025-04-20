@@ -49,10 +49,11 @@ function Base.copy(tn::GenericTensorNetwork)
     sorted_tensors = CachedField{Vector{Tensor}}()
     unsafe = Ref{Union{Nothing,UnsafeScope}}(tn.unsafe[])
 
-    new_tn = GenericTensorNetwork(; indmap, tensors, linkmap, sitemap, sorted_tensors, unsafe)
+    new_tn = GenericTensorNetwork(; indmap, tensors, sorted_tensors, unsafe)
 
+    # register the new copy to the proper UnsafeScope
     if !isnothing(unsafe[])
-        push!(unsafe[].refs, WeakRef(new_tn)) # Register the new copy to the proper UnsafeScope
+        push!(unsafe[].refs, WeakRef(new_tn))
     end
 
     return new_tn
@@ -63,16 +64,9 @@ get_unsafe_scope(tn::GenericTensorNetwork) = tn.unsafe[]
 set_unsafe_scope!(tn::GenericTensorNetwork, uc::Union{Nothing,UnsafeScope}) = tn.unsafe[] = uc
 
 function checksizes(tn::GenericTensorNetwork)
-    # Iterate through each index in the indmap
     for (index, tensors) in tn.indmap
-        # Get the size of the first tensor for this index
-        reference_size = size(tensors[1], index)
-
-        # Compare the size of each subsequent tensor for this index
-        for tensor in tensors
-            if size(tensor, index) != reference_size
-                return false
-            end
+        if !allequal(tensor -> size(tensor, index), tensors)
+            return false
         end
     end
 
@@ -103,7 +97,11 @@ end
 
 size_ind(tn::GenericTensorNetwork, index::Index) = size(first(tn.indmap[index]), index)
 
-tensors_contain_inds(tn::GenericTensorNetwork, index::Index) = copy(tn.indmap[index])
+function tensors_contain_inds(tn::GenericTensorNetwork, index::Index)
+    @assert hasind(tn, index) "index $index not found in tensor network"
+    copy(tn.indmap[index])
+end
+
 function tensors_contain_inds(tn::GenericTensorNetwork, indices)
     target_tensors = tensors(tn; contain=first(indices))
     filter!(target_tensors) do tensor
@@ -173,12 +171,21 @@ function replace_tensor_inner!(tn::GenericTensorNetwork, old_tensor, new_tensor)
         @argcheck issetequal(inds(new_tensor), inds(old_tensor)) "replacing tensor indices don't match"
     end
 
-    # do the actual replace
+    # remove old tensor
     for index in unique(inds(old_tensor))
+        filter!(Base.Fix1(!==, old_tensor), tn.indmap[index])
+        if isempty(tn.indmap[index])
+            delete!(tn.indmap, index)
+        end
+    end
+    delete!(tn.tensors, old_tensor)
+
+    # add new tensor
+    for index in unique(inds(new_tensor))
         list = get!(tn.indmap, index, Tensor[])
-        filter!(Base.Fix1(!==, old_tensor), list)
         push!(list, new_tensor)
     end
+    push!(tn.tensors, new_tensor)
 
     # tensors have changed, invalidate cache and reconstruct on next `tensors` call
     invalidate!(tn.sorted_tensors)
@@ -190,16 +197,16 @@ canhandle(::GenericTensorNetwork, @nospecialize(e::ReplaceEffect{<:Tensor,<:Tens
 handle!(::GenericTensorNetwork, @nospecialize(e::ReplaceEffect{<:Tensor,<:Tensor})) = nothing
 
 canhandle(::GenericTensorNetwork, @nospecialize(e::ReplaceEffect{<:Index,<:Index})) = true
-handle!(::GenericTensorNetwork, @nospecialize(e::ReplaceEffect{<:Index,<:Index})) = tryprune!(tn, e.old)
+handle!(tn::GenericTensorNetwork, @nospecialize(e::ReplaceEffect{<:Index,<:Index})) = tryprune!(tn, e.old)
 
 function tryprune!(tn::GenericTensorNetwork, i::Index)
     if hasind(tn, i) && isempty(tn.indmap[i])
         delete!(tn.indmap, i)
 
         # remove index tag
-        if haskey(tn.linkmap', i)
-            delete!(tn.linkmap, tn.linkmap[i])
-        end
+        # if haskey(tn.linkmap', i)
+        #     delete!(tn.linkmap, tn.linkmap[i])
+        # end
     end
 
     return tn

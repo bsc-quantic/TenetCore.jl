@@ -432,9 +432,7 @@ Return a copy of the `TensorNetwork` with all [`Tensor`](@ref)s replaced by thei
 """
 function Base.similar(tn::AbstractTensorNetwork)
     tn = copy(tn)
-    for tensor in tensors(tn)
-        replace!(tn, tensor => similar(tensor))
-    end
+    replace!(tn, tensors(tn) .=> similar.(tensors(tn)))
     return tn
 end
 
@@ -445,9 +443,7 @@ Return a copy of the `TensorNetwork` with all [`Tensor`](@ref)s replaced by thei
 """
 function Base.zero(tn::AbstractTensorNetwork)
     tn = copy(tn)
-    for tensor in tensors(tn)
-        replace!(tn, tensor => zero(tensor))
-    end
+    replace!(tn, tensors(tn) .=> zero.(tensors(tn)))
     return tn
 end
 
