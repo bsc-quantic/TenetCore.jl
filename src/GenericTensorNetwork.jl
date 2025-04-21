@@ -135,8 +135,8 @@ function addtensor_inner!(tn::GenericTensorNetwork, tensor::Tensor)
     return tn
 end
 
-canhandle(::GenericTensorNetwork, @nospecialize(e::PushEffect{<:Tensor})) = true
-handle!(::GenericTensorNetwork, @nospecialize(e::PushEffect{<:Tensor})) = nothing
+prehandle!(::GenericTensorNetwork, @nospecialize(e::PushEffect{<:Tensor})) = nothing
+posthandle!(::GenericTensorNetwork, @nospecialize(e::PushEffect{<:Tensor})) = nothing
 
 function rmtensor_inner!(tn::GenericTensorNetwork, tensor::Tensor)
     # do the actual delete
@@ -158,8 +158,8 @@ function rmtensor_inner!(tn::GenericTensorNetwork, tensor::Tensor)
     return tn
 end
 
-canhandle(::GenericTensorNetwork, @nospecialize(e::DeleteEffect{<:Tensor})) = true
-handle!(::GenericTensorNetwork, @nospecialize(e::DeleteEffect{<:Tensor})) = nothing
+prehandle!(::GenericTensorNetwork, @nospecialize(e::DeleteEffect{<:Tensor})) = nothing
+posthandle!(::GenericTensorNetwork, @nospecialize(e::DeleteEffect{<:Tensor})) = nothing
 
 function replace_tensor_inner!(tn::GenericTensorNetwork, old_tensor, new_tensor)
     old_tensor === new_tensor && return tn
@@ -193,11 +193,11 @@ function replace_tensor_inner!(tn::GenericTensorNetwork, old_tensor, new_tensor)
     return tn
 end
 
-canhandle(::GenericTensorNetwork, @nospecialize(e::ReplaceEffect{<:Tensor,<:Tensor})) = true
-handle!(::GenericTensorNetwork, @nospecialize(e::ReplaceEffect{<:Tensor,<:Tensor})) = nothing
+prehandle!(::GenericTensorNetwork, @nospecialize(e::ReplaceEffect{<:Tensor,<:Tensor})) = nothing
+posthandle!(::GenericTensorNetwork, @nospecialize(e::ReplaceEffect{<:Tensor,<:Tensor})) = nothing
 
-canhandle(::GenericTensorNetwork, @nospecialize(e::ReplaceEffect{<:Index,<:Index})) = true
-handle!(tn::GenericTensorNetwork, @nospecialize(e::ReplaceEffect{<:Index,<:Index})) = tryprune!(tn, e.old)
+prehandle!(tn::GenericTensorNetwork, @nospecialize(e::ReplaceEffect{<:Index,<:Index})) = nothing
+posthandle!(tn::GenericTensorNetwork, @nospecialize(e::ReplaceEffect{<:Index,<:Index})) = tryprune!(tn, e.old)
 
 function tryprune!(tn::GenericTensorNetwork, i::Index)
     if hasind(tn, i) && isempty(tn.indmap[i])
@@ -211,34 +211,6 @@ function tryprune!(tn::GenericTensorNetwork, i::Index)
 
     return tn
 end
-
-# function handle!(tn::GenericTensorNetwork, e::ReplaceEffect{Ia,Ib}) where {Ia<:Index,Ib<:Index}
-#     tag = tn.linkmap'[e.old]
-#     delete!(tn.linkmap, tag)
-#     tag_inner!(tn, e.new, tag)
-#     return tn
-# end
-
-# function handle!(tn::GenericTensorNetwork, @nospecialize(e::ReplaceEffect{A,B})) where {A<:Tensor,B<:Tensor}
-#     tag = tn.sitemap'[e.old]
-#     delete!(tn.sitemap, tag)
-#     tag_inner!(tn, e.new, tag)
-#     return tn
-# end
-
-# do not allow replacing a tensor with a Tensor Network if we don't know how to handle the tags
-# TODO allow it by copying the tags too if posible
-# function canhandle(tn::GenericTensorNetwork, @nospecialize(e::ReplaceEffect{T,TN})) where {T<:Tensor,TN<:AbstractTensorNetwork}
-#     haskey(tn.sitemap', e.f)
-# end
-
-# handle!(::GenericTensorNetwork, @nospecialize(e::ReplaceEffect{T,TensorNetwork}))
-# handle!(::GenericTensorNetwork, @nospecialize(e::ReplaceEffect{Vector{A},B})) where {A<:Tensor,B<:Tensor} = nothing
-
-# handle!(::GenericTensorNetwork, @nospecialize(e::TagEffect{S,T})) where {S<:Site,T<:Tensor} = nothing
-# handle!(::GenericTensorNetwork, @nospecialize(e::TagEffect{L,I})) where {L<:Link,I<:Index} = nothing
-# handle!(::GenericTensorNetwork, @nospecialize(e::UntagEffect{S})) where {S<:Site} = nothing
-# handle!(::GenericTensorNetwork, @nospecialize(e::UntagEffect{L})) where {L<:Link} = nothing
 
 # derived methods
 Base.:(==)(a::GenericTensorNetwork, b::GenericTensorNetwork) = all(splat(==), zip(tensors(a), tensors(b)))
