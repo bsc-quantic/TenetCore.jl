@@ -39,4 +39,7 @@ export plugs, plug, nplugs, hasplug, plugs_like, plug_like, ind_at_plug, plugs_l
 include("GenericTensorNetwork.jl")
 export GenericTensorNetwork
 
+include("TaggedTensorNetwork.jl")
+export TaggedTensorNetwork
+
 end
