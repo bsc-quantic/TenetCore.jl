@@ -135,7 +135,6 @@ function addtensor_inner!(tn::GenericTensorNetwork, tensor::Tensor)
     return tn
 end
 
-canhandle(::GenericTensorNetwork, @nospecialize(e::PushEffect{<:Tensor})) = true
 handle!(::GenericTensorNetwork, @nospecialize(e::PushEffect{<:Tensor})) = nothing
 
 function rmtensor_inner!(tn::GenericTensorNetwork, tensor::Tensor)
@@ -158,7 +157,6 @@ function rmtensor_inner!(tn::GenericTensorNetwork, tensor::Tensor)
     return tn
 end
 
-canhandle(::GenericTensorNetwork, @nospecialize(e::DeleteEffect{<:Tensor})) = true
 handle!(::GenericTensorNetwork, @nospecialize(e::DeleteEffect{<:Tensor})) = nothing
 
 function replace_tensor_inner!(tn::GenericTensorNetwork, old_tensor, new_tensor)
@@ -193,10 +191,8 @@ function replace_tensor_inner!(tn::GenericTensorNetwork, old_tensor, new_tensor)
     return tn
 end
 
-canhandle(::GenericTensorNetwork, @nospecialize(e::ReplaceEffect{<:Tensor,<:Tensor})) = true
 handle!(::GenericTensorNetwork, @nospecialize(e::ReplaceEffect{<:Tensor,<:Tensor})) = nothing
 
-canhandle(::GenericTensorNetwork, @nospecialize(e::ReplaceEffect{<:Index,<:Index})) = true
 handle!(tn::GenericTensorNetwork, @nospecialize(e::ReplaceEffect{<:Index,<:Index})) = tryprune!(tn, e.old)
 
 function tryprune!(tn::GenericTensorNetwork, i::Index)

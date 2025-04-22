@@ -35,7 +35,6 @@ function TenetNext.addtensor_inner!(tn::MockTensorNetwork, tensor::Tensor)
     return tn
 end
 
-TenetNext.canhandle(::MockTensorNetwork, ::TenetNext.PushEffect{<:Tensor}) = true
 TenetNext.handle!(::MockTensorNetwork, ::TenetNext.PushEffect{<:Tensor}) = nothing
 
 function TenetNext.rmtensor_inner!(tn::MockTensorNetwork, tensor::Tensor)
@@ -46,13 +45,9 @@ function TenetNext.rmtensor_inner!(tn::MockTensorNetwork, tensor::Tensor)
     return tn
 end
 
-TenetNext.canhandle(::MockTensorNetwork, ::TenetNext.DeleteEffect{<:Tensor}) = true
 TenetNext.handle!(::MockTensorNetwork, ::TenetNext.DeleteEffect{<:Tensor}) = nothing
 
-TenetNext.canhandle(::MockTensorNetwork, ::TenetNext.ReplaceEffect{<:Tensor,<:Tensor}) = true
 TenetNext.handle!(::MockTensorNetwork, ::TenetNext.ReplaceEffect{<:Tensor,<:Tensor}) = nothing
-
-TenetNext.canhandle(::MockTensorNetwork, ::TenetNext.ReplaceEffect{<:Index,<:Index}) = true
 TenetNext.handle!(::MockTensorNetwork, ::TenetNext.ReplaceEffect{<:Index,<:Index}) = nothing
 
 test_tensors = [

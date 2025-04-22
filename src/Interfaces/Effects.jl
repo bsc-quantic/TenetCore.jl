@@ -16,6 +16,7 @@ canhandle(::T, ::E) where {T,E} = canhandle(T, E)
 canhandle(::Type{T}, ::Type{E}) where {T,E} = false # hasmethod(handle!, Tuple{T,E})
 
 struct MissingEffectHandlerException{T,E} <: Core.Exception end
+MissingEffectHandlerException(::T, ::E) where {T,E} = MissingEffectHandlerException{T,E}()
 MissingEffectHandlerException(::Type{T}, ::Type{E}) where {T,E} = MissingEffectHandlerException{T,E}()
 Base.showerror(io::IO, ::MissingEffectHandlerException{T,E}) where {T,E} = print(io, "$T cannot handle effect $E")
 
@@ -25,6 +26,8 @@ function checkhandle(x::T, effect::E) where {T,E}
     end
 end
 
+function checkeffect end
+
 """
     handle!(x, effect::Effect)
 
@@ -33,7 +36,10 @@ Handle the `effect` on `x`. By default, does nothing.
 function handle! end
 
 # by default, ignore effects
-handle!(_, e) = nothing
+function handle!(@nospecialize(x::X), @nospecialize(e)) where {X}
+    @debug "ignored effect $e on $X"
+    nothing
+end
 
 """
     PushEffect{F} <: Effect

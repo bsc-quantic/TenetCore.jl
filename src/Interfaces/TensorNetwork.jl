@@ -283,7 +283,6 @@ function replace_ind_inner!(tn, old_ind, new_ind, ::DontDelegate)
     ############################################################################
 
     @unsafe_region tn for old_tensor in tensors_contain_inds(tn, old_ind)
-        checkhandle(tn, ReplaceEffect(old_tensor => old_tensor))
         new_tensor = replace(old_tensor, old_ind => new_ind)
         replace_tensor!(tn, old_tensor, new_tensor)
     end
@@ -291,114 +290,95 @@ end
 
 ## `addtensor!`
 function addtensor!(tn, tensor)
-    checkhandle(tn, PushEffect(tensor))
-    hastensor(tn, tensor) && return tn
+    checkeffect(tn, PushEffect(tensor))
     addtensor_inner!(tn, tensor)
     handle!(tn, PushEffect(tensor))
     return tn
 end
 
-canhandle(tn, @nospecialize(e::PushEffect{<:Tensor})) = canhandle(tn, e, delegates(TensorNetwork(), tn))
-canhandle(tn, @nospecialize(e::PushEffect{<:Tensor}), ::DelegateTo) = canhandle(delegate(TensorNetwork(), tn), e)
-canhandle(tn, @nospecialize(e::PushEffect{<:Tensor}), ::DontDelegate) = false
+checkeffect(tn, @nospecialize(e::PushEffect{<:Tensor})) = checkeffect(tn, e, delegates(TensorNetwork(), tn))
+checkeffect(tn, @nospecialize(e::PushEffect{<:Tensor}), ::DelegateTo) = checkeffect(delegate(TensorNetwork(), tn), e)
+function checkeffect(tn, @nospecialize(e::PushEffect{T}), ::DontDelegate) where {T<:Tensor}
+    # TODO throw a custom EffectError
+    hastensor(tn, e.f) && throw(ArgumentError("tensor already present"))
+end
 
 handle!(tn, @nospecialize(e::PushEffect{<:Tensor})) = handle!(tn, e, delegates(TensorNetwork(), tn))
 handle!(tn, @nospecialize(e::PushEffect{<:Tensor}), ::DelegateTo) = handle!(delegate(TensorNetwork(), tn), e)
-function handle!(_, @nospecialize(e::PushEffect{T}), ::DontDelegate) where {T<:Tensor}
-    error("`PushEffect{$T}` was emitted thinking it could be handled but no handler is defined")
+function handle!(tn, @nospecialize(e::PushEffect{T}), ::DontDelegate) where {T<:Tensor}
+    throw(MissingEffectHandlerException(tn, e))
 end
 
 ## `rmtensor!`
 function rmtensor!(tn, tensor)
-    checkhandle(tn, DeleteEffect(tensor))
-    hastensor(tn, tensor) || throw(ArgumentError("Tensor not found in Tensor Network"))
+    checkeffect(tn, DeleteEffect(tensor))
     rmtensor_inner!(tn, tensor)
     handle!(tn, DeleteEffect(tensor))
     return tn
 end
-canhandle(tn, @nospecialize(e::DeleteEffect{<:Tensor})) = canhandle(tn, e, delegates(TensorNetwork(), tn))
-canhandle(tn, @nospecialize(e::DeleteEffect{<:Tensor}), ::DelegateTo) = canhandle(delegate(TensorNetwork(), tn), e)
-canhandle(tn, @nospecialize(e::DeleteEffect{<:Tensor}), ::DontDelegate) = false
+
+checkeffect(tn, @nospecialize(e::DeleteEffect{<:Tensor})) = checkeffect(tn, e, delegates(TensorNetwork(), tn))
+checkeffect(tn, @nospecialize(e::DeleteEffect{<:Tensor}), ::DelegateTo) = checkeffect(delegate(TensorNetwork(), tn), e)
+function checkeffect(tn, @nospecialize(e::DeleteEffect{T}), ::DontDelegate) where {T<:Tensor}
+    hastensor(tn, e.f) || throw(ArgumentError("tensor not found"))
+end
 
 handle!(tn, @nospecialize(e::DeleteEffect{<:Tensor})) = handle!(tn, e, delegates(TensorNetwork(), tn))
 handle!(tn, @nospecialize(e::DeleteEffect{<:Tensor}), ::DelegateTo) = handle!(delegate(TensorNetwork(), tn), e)
-function handle!(_, @nospecialize(e::DeleteEffect{T}), ::DontDelegate) where {T<:Tensor}
-    error("`DeleteEffect{$T}` was emitted thinking it could be handled but no handler is defined")
+function handle!(tn, @nospecialize(e::DeleteEffect{T}), ::DontDelegate) where {T<:Tensor}
+    throw(MissingEffectHandlerException(tn, e))
 end
 
 ## `replace_tensor!`
 function replace_tensor!(tn, old_tensor, new_tensor)
-    checkhandle(tn, ReplaceEffect(old_tensor, new_tensor))
+    checkeffect(tn, ReplaceEffect(old_tensor, new_tensor))
     replace_tensor_inner!(tn, old_tensor, new_tensor)
     handle!(tn, ReplaceEffect(old_tensor, new_tensor))
     return tn
 end
 
-canhandle(tn, @nospecialize(e::ReplaceEffect{<:Tensor,<:Tensor})) = canhandle(tn, e, delegates(TensorNetwork(), tn))
-function canhandle(tn, @nospecialize(e::ReplaceEffect{<:Tensor,<:Tensor}), ::DelegateTo)
-    canhandle(delegate(TensorNetwork(), tn), e)
+checkeffect(tn, @nospecialize(e::ReplaceEffect{<:Tensor,<:Tensor})) = checkeffect(tn, e, delegates(TensorNetwork(), tn))
+function checkeffect(tn, @nospecialize(e::ReplaceEffect{<:Tensor,<:Tensor}), ::DelegateTo)
+    checkeffect(delegate(TensorNetwork(), tn), e)
 end
-canhandle(tn, @nospecialize(e::ReplaceEffect{<:Tensor,<:Tensor}), ::DontDelegate) = false
+function checkeffect(tn, @nospecialize(e::ReplaceEffect{Told,Tnew}), ::DontDelegate) where {Told<:Tensor,Tnew<:Tensor}
+    hastensor(tn, e.old) || throw(ArgumentError("old tensor not found"))
+    hastensor(tn, e.new) && throw(ArgumentError("new tensor already exists"))
+
+    if !isscoped(tn)
+        @argcheck issetequal(inds(e.new), inds(e.old)) "replacing tensor indices don't match"
+    end
+end
 
 handle!(tn, @nospecialize(e::ReplaceEffect{<:Tensor,<:Tensor})) = handle!(tn, e, delegates(TensorNetwork(), tn))
 function handle!(tn, @nospecialize(e::ReplaceEffect{<:Tensor,<:Tensor}), ::DelegateTo)
     handle!(delegate(TensorNetwork(), tn), e)
 end
 function handle!(_, @nospecialize(e::ReplaceEffect{Told,Tnew}), ::DontDelegate) where {Told<:Tensor,Tnew<:Tensor}
-    error("`ReplaceEffect{$Told,$Tnew}` was emitted thinking it could be handled but no handler is defined")
+    throw(MissingEffectHandlerException(tn, e))
 end
 
 ## `replace_ind!`
 function replace_ind!(tn, old_ind, new_ind)
-    checkhandle(tn, ReplaceEffect(old_ind, new_ind))
+    checkeffect(tn, ReplaceEffect(old_ind, new_ind))
     replace_ind_inner!(tn, old_ind, new_ind)
     handle!(tn, ReplaceEffect(old_ind, new_ind))
     return tn
 end
-canhandle(tn, @nospecialize(e::ReplaceEffect{<:Index,<:Index})) = canhandle(tn, e, delegates(TensorNetwork(), tn))
-function canhandle(tn, @nospecialize(e::ReplaceEffect{<:Index,<:Index}), ::DelegateTo)
-    canhandle(delegate(TensorNetwork(), tn), e)
+
+checkeffect(tn, @nospecialize(e::ReplaceEffect{<:Index,<:Index})) = checkeffect(tn, e, delegates(TensorNetwork(), tn))
+function checkeffect(tn, @nospecialize(e::ReplaceEffect{<:Index,<:Index}), ::DelegateTo)
+    checkeffect(delegate(TensorNetwork(), tn), e)
 end
-canhandle(tn, @nospecialize(e::ReplaceEffect{<:Index,<:Index}), ::DontDelegate) = false
+function checkeffect(tn, @nospecialize(e::ReplaceEffect{Iold,Inew}), ::DontDelegate) where {Iold<:Index,Inew<:Index}
+    hasind(tn, e.old) || throw(ArgumentError("old index not found"))
+    hasind(tn, e.new) && throw(ArgumentError("new index already exists"))
+end
 
 handle!(tn, @nospecialize(e::ReplaceEffect{<:Index,<:Index})) = handle!(tn, e, delegates(TensorNetwork(), tn))
 handle!(tn, @nospecialize(e::ReplaceEffect{<:Index,<:Index}), ::DelegateTo) = handle!(delegate(TensorNetwork(), tn), e)
 function handle!(_, @nospecialize(e::ReplaceEffect{Iold,Inew}), ::DontDelegate) where {Iold<:Index,Inew<:Index}
-    error("`PushEffect{$Iold,$Inew}` was emitted thinking it could be handled but no handler is defined")
-end
-
-function replace_inds!(tn, old_new)
-    from, to = first.(old_new), last.(old_new)
-    allinds = inds(tn)
-
-    # condition: from ⊆ allinds
-    @argcheck from ⊆ allinds "set of old indices must be a subset of current indices"
-
-    # condition: from \ to ∩ allinds = ∅
-    @argcheck isdisjoint(setdiff(to, from), allinds) """
-        new indices must be either a element of the old indices or not an element of the TensorNetwork's indices
-        """
-
-    overlap = from ∩ to
-    if isempty(overlap)
-        # no overlap so easy replacement
-        for (f, t) in zip(from, to)
-            replace!(tn, f => t)
-        end
-    else
-        # overlap between old and new indices => need a temporary name `replace!`
-        tmp = Dict([i => gensym(i) for i in from])
-
-        # replace old indices with temporary names
-        # TODO maybe do replacement manually and call `handle!` once in the end?
-        replace!(tn, tmp)
-
-        # replace temporary names with new indices
-        replace!(tn, [tmp[f] => t for (f, t) in zip(from, to)])
-    end
-
-    # return the final index mapping
-    return tn
+    throw(MissingEffectHandlerException(tn, e))
 end
 
 # derived methods
@@ -602,9 +582,43 @@ function Base.replace!(
     return tn
 end
 
+function replace_inds!(tn, old_new)
+    from, to = first.(old_new), last.(old_new)
+    allinds = inds(tn)
+
+    # condition: from ⊆ allinds
+    @argcheck from ⊆ allinds "set of old indices must be a subset of current indices"
+
+    # condition: from \ to ∩ allinds = ∅
+    @argcheck isdisjoint(setdiff(to, from), allinds) """
+        new indices must be either a element of the old indices or not an element of the TensorNetwork's indices
+        """
+
+    overlap = from ∩ to
+    if isempty(overlap)
+        # no overlap so easy replacement
+        for (f, t) in zip(from, to)
+            replace!(tn, f => t)
+        end
+    else
+        # overlap between old and new indices => need a temporary name `replace!`
+        tmp = Dict([i => gensym(i) for i in from])
+
+        # replace old indices with temporary names
+        # TODO maybe do replacement manually and call `handle!` once in the end?
+        replace!(tn, tmp)
+
+        # replace temporary names with new indices
+        replace!(tn, [tmp[f] => t for (f, t) in zip(from, to)])
+    end
+
+    # return the final index mapping
+    return tn
+end
+
 # replace tensor with a TensorNetwork
 function Base.replace!(tn::AbstractTensorNetwork, old_new::Pair{<:Tensor,<:AbstractTensorNetwork})
-    checkhandle(tn, ReplaceEffect(old_new))
+    checkeffect(tn, ReplaceEffect(old_new))
 
     old, new = old_new
     @argcheck issetequal(inds(new; set=:open), inds(old)) "indices don't match"
@@ -628,7 +642,7 @@ end
 function Base.replace!(tn::AbstractTensorNetwork, @nospecialize(old_new::Pair{<:Vector{<:Tensor},<:Tensor}))
     old, new = old_new
 
-    checkhandle(tn, ReplaceEffect(old, new))
+    checkeffect(tn, ReplaceEffect(old, new))
     @argcheck all(∈(tn), old)
     @argcheck new ∉ tn
     @argcheck inds(new) ⊆ collect(Iterators.flatmap(inds, old))
