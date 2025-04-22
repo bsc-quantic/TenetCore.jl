@@ -241,57 +241,29 @@ end
 
 ## `tag!`
 function tag!(tn, x, tag)
+    checkhandle(tn, TagEffect(tag, x))
     hastag(tn, tag) && throw(ArgumentError("Tag $(tag) already exists in TensorNetwork"))
     x ∈ tn || throw(ArgumentError("Object not found in TensorNetwork"))
-    prehandle!(tn, TagEffect(tag, x))
     tag_inner!(tn, x, tag)
-    posthandle!(tn, TagEffect(tag, x))
+    handle!(tn, TagEffect(tag, x))
     return tn
 end
 
-prehandle!(tn, @nospecialize(e::E)) where {E<:TagEffect} = prehandle!(tn, e, delegates(Taggable(), tn))
-prehandle!(tn, @nospecialize(e::E), ::DelegateTo) where {E<:TagEffect} = prehandle!(tn, e, delegate(Taggable(), tn))
-prehandle!(tn, @nospecialize(e::E), ::DontDelegate) where {E<:TagEffect} = throw(MissingHandlerException(tn, e))
-
-posthandle!(tn, @nospecialize(e::E)) where {E<:TagEffect} = posthandle!(tn, e, delegates(Taggable(), tn))
-posthandle!(tn, @nospecialize(e::E), ::DelegateTo) where {E<:TagEffect} = posthandle!(tn, e, delegate(Taggable(), tn))
-posthandle!(tn, @nospecialize(e::E), ::DontDelegate) where {E<:TagEffect} = throw(MissingHandlerException(tn, e))
-
 ## `untag!`
 function untag!(tn, tag)
+    checkhandle(tn, UntagEffect(tag))
     hastag(tn, tag) || throw(ArgumentError("Tag $(tag) not found in TensorNetwork"))
-    prehandle!(tn, UntagEffect(tag))
     untag_inner!(tn, tag)
     handle!(tn, UntagEffect(tag))
     return tn
 end
 
-prehandle!(tn, @nospecialize(e::E)) where {E<:UntagEffect} = prehandle!(tn, e, delegates(Taggable(), tn))
-prehandle!(tn, @nospecialize(e::E), ::DelegateTo) where {E<:UntagEffect} = prehandle!(tn, e, delegate(Taggable(), tn))
-prehandle!(tn, @nospecialize(e::E), ::DontDelegate) where {E<:UntagEffect} = throw(MissingHandlerException(tn, e))
-
-posthandle!(tn, @nospecialize(e::E)) where {E<:UntagEffect} = posthandle!(tn, e, delegates(Taggable(), tn))
-posthandle!(tn, @nospecialize(e::E), ::DelegateTo) where {E<:UntagEffect} = posthandle!(tn, e, delegate(Taggable(), tn))
-posthandle!(tn, @nospecialize(e::E), ::DontDelegate) where {E<:UntagEffect} = throw(MissingHandlerException(tn, e))
-
 ## `replace_tag!`
 function replace_tag!(tn, old_tag, new_tag)
+    checkhandle(tn, ReplaceTagEffect(old_tag, new_tag))
     hastag(tn, old_tag) || throw(ArgumentError("Tag $(old_tag) not found in TensorNetwork"))
     hastag(tn, new_tag) && throw(ArgumentError("Tag $(new_tag) already exists in TensorNetwork"))
-    prehandle!(tn, ReplaceTagEffect(old_tag, new_tag))
     replace_tag_inner!(tn, old_tag, new_tag)
-    posthandle!(tn, ReplaceTagEffect(old_tag, new_tag))
+    handle!(tn, ReplaceTagEffect(old_tag, new_tag))
     return tn
-end
-
-prehandle!(tn, @nospecialize(e::ReplaceEffect{<:Tag,<:Tag})) = prehandle!(tn, e, delegates(Taggable(), tn))
-prehandle!(tn, @nospecialize(e::ReplaceEffect{<:Tag,<:Tag}), ::DelegateTo) = prehandle!(delegate(Taggable(), tn), e)
-function prehandle!(tn, @nospecialize(e::ReplaceEffect{<:Tag,<:Tag}), ::DontDelegate)
-    throw(MissingEffectHandlerException(tn, e))
-end
-
-posthandle!(tn, @nospecialize(e::ReplaceEffect{<:Tag,<:Tag})) = posthandle!(tn, e, delegates(Taggable(), tn))
-posthandle!(tn, @nospecialize(e::ReplaceEffect{<:Tag,<:Tag}), ::DelegateTo) = posthandle!(delegate(Taggable(), tn), e)
-function posthandle!(tn, @nospecialize(e::ReplaceEffect{<:Tag,<:Tag}), ::DontDelegate)
-    throw(MissingEffectHandlerException(tn, e))
 end

@@ -35,8 +35,8 @@ function TenetNext.addtensor_inner!(tn::MockTensorNetwork, tensor::Tensor)
     return tn
 end
 
-TenetNext.prehandle!(::MockTensorNetwork, ::TenetNext.PushEffect{<:Tensor}) = nothing
-TenetNext.posthandle!(::MockTensorNetwork, ::TenetNext.PushEffect{<:Tensor}) = nothing
+TenetNext.canhandle(::MockTensorNetwork, ::TenetNext.PushEffect{<:Tensor}) = true
+TenetNext.handle!(::MockTensorNetwork, ::TenetNext.PushEffect{<:Tensor}) = nothing
 
 function TenetNext.rmtensor_inner!(tn::MockTensorNetwork, tensor::Tensor)
     if !hastensor(tn, tensor)
@@ -46,14 +46,14 @@ function TenetNext.rmtensor_inner!(tn::MockTensorNetwork, tensor::Tensor)
     return tn
 end
 
-TenetNext.prehandle!(::MockTensorNetwork, ::TenetNext.DeleteEffect{<:Tensor}) = nothing
-TenetNext.posthandle!(::MockTensorNetwork, ::TenetNext.DeleteEffect{<:Tensor}) = nothing
+TenetNext.canhandle(::MockTensorNetwork, ::TenetNext.DeleteEffect{<:Tensor}) = true
+TenetNext.handle!(::MockTensorNetwork, ::TenetNext.DeleteEffect{<:Tensor}) = nothing
 
-TenetNext.prehandle!(::MockTensorNetwork, ::TenetNext.ReplaceEffect{<:Tensor,<:Tensor}) = nothing
-TenetNext.posthandle!(::MockTensorNetwork, ::TenetNext.ReplaceEffect{<:Tensor,<:Tensor}) = nothing
+TenetNext.canhandle(::MockTensorNetwork, ::TenetNext.ReplaceEffect{<:Tensor,<:Tensor}) = true
+TenetNext.handle!(::MockTensorNetwork, ::TenetNext.ReplaceEffect{<:Tensor,<:Tensor}) = nothing
 
-TenetNext.prehandle!(::MockTensorNetwork, ::TenetNext.ReplaceEffect{<:Index,<:Index}) = nothing
-TenetNext.posthandle!(::MockTensorNetwork, ::TenetNext.ReplaceEffect{<:Index,<:Index}) = nothing
+TenetNext.canhandle(::MockTensorNetwork, ::TenetNext.ReplaceEffect{<:Index,<:Index}) = true
+TenetNext.handle!(::MockTensorNetwork, ::TenetNext.ReplaceEffect{<:Index,<:Index}) = nothing
 
 test_tensors = [
     Tensor(rand(ComplexF64, 2, 3), Index.([:i, :j])),
