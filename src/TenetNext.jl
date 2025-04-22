@@ -27,10 +27,10 @@ export size_inds, size_ind
 export arrays
 
 # from Taggable
-export sites, site, hassite, nsites, all_sites
-export links, link, haslink, nlinks, all_links
-export tensor_at, ind_at, site_at, link_at
-export tag!, untag!
+export sites, site, hassite, nsites, all_sites, sites_like, site_like
+export links, link, haslink, nlinks, all_links, links_like, link_like
+export tensor_at, ind_at, site_at, link_at, size_link
+export tag!, untag!, replace_tag!
 
 # from Pluggable
 export plugs, plug, nplugs, hasplug, plugs_like, plug_like, ind_at_plug, plugs_like, plug_like, align!, @align!

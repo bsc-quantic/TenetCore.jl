@@ -1,3 +1,5 @@
+using QuantumTags: Tag
+
 # interface object
 struct Taggable <: Interface end
 
@@ -215,12 +217,13 @@ untag_inner!(tn, tag, ::DontDelegate) = throw(MethodError(untag_inner!, (tn, tag
 ## `replace_tag_inner!`
 replace_tag_inner!(tn, old_tag, new_tag) = replace_tag_inner!(tn, old_tag, new_tag, delegates(Taggable(), tn))
 replace_tag_inner!(tn, old_tag, new_tag, ::DelegateTo) = replace_tag!(tn, old_tag, new_tag)
+
 function replace_tag_inner!(tn, old_tag::Site, new_tag::Site, ::DontDelegate)
     @debug "Falling back to the default `replace_tag_inner!` method"
 
     old_tag == new_tag && return tn
-    hastag(tn, old_tag) || throw(ArgumentError("old tag not found"))
-    hastag(tn, new_tag) && throw(ArgumentError("new tag already exists"))
+    hassite(tn, old_tag) || throw(ArgumentError("old tag not found"))
+    hassite(tn, new_tag) && throw(ArgumentError("new tag already exists"))
 
     tensor = tensor_at(tn, old_tag)
     untag_inner!(tn, old_tag)
@@ -231,8 +234,8 @@ function replace_tag_inner!(tn, old_tag::Link, new_tag::Link, ::DontDelegate)
     @debug "Falling back to the default `replace_tag_inner!` method"
 
     old_tag == new_tag && return tn
-    hastag(tn, old_tag) || throw(ArgumentError("old tag not found"))
-    hastag(tn, new_tag) && throw(ArgumentError("new tag already exists"))
+    haslink(tn, old_tag) || throw(ArgumentError("old tag not found"))
+    haslink(tn, new_tag) && throw(ArgumentError("new tag already exists"))
 
     ind = ind_at(tn, old_tag)
     untag_inner!(tn, old_tag)
@@ -241,29 +244,83 @@ end
 
 ## `tag!`
 function tag!(tn, x, tag)
-    checkhandle(tn, TagEffect(tag, x))
-    hastag(tn, tag) && throw(ArgumentError("Tag $(tag) already exists in TensorNetwork"))
-    x ∈ tn || throw(ArgumentError("Object not found in TensorNetwork"))
+    checkeffect(tn, TagEffect(tag, x))
     tag_inner!(tn, x, tag)
     handle!(tn, TagEffect(tag, x))
     return tn
 end
 
+checkeffect(tn, @nospecialize(e::TagEffect)) = checkeffect(tn, e, delegates(Taggable(), tn))
+checkeffect(tn, @nospecialize(e::TagEffect), ::DelegateTo) = checkeffect(delegate(Taggable(), tn), e)
+
+function checkeffect(tn, @nospecialize(e::TagEffect{<:Site,<:Tensor}))
+    hassite(tn, e.tag) && throw(ArgumentError("Tag $(e.tag) already exists in TensorNetwork"))
+    hastensor(tn, e.obj) || throw(ArgumentError("Tensor not found in TensorNetwork"))
+end
+
+function checkeffect(tn, @nospecialize(e::TagEffect{<:Link,<:Index}))
+    haslink(tn, e.tag) && throw(ArgumentError("Tag $(e.tag) already exists in TensorNetwork"))
+    hasind(tn, e.obj) || throw(ArgumentError("Index not found in TensorNetwork"))
+end
+
+handle!(tn, @nospecialize(e::E)) where {E<:TagEffect} = handle!(tn, e, delegates(Taggable(), tn))
+handle!(tn, @nospecialize(e::E), ::DelegateTo) where {E<:TagEffect} = handle!(tn, e, delegate(Taggable(), tn))
+handle!(tn, @nospecialize(e::E), ::DontDelegate) where {E<:TagEffect} = throw(MissingHandlerException(tn, e))
+
 ## `untag!`
 function untag!(tn, tag)
-    checkhandle(tn, UntagEffect(tag))
-    hastag(tn, tag) || throw(ArgumentError("Tag $(tag) not found in TensorNetwork"))
+    checkeffect(tn, UntagEffect(tag))
     untag_inner!(tn, tag)
     handle!(tn, UntagEffect(tag))
     return tn
 end
 
+checkeffect(tn, @nospecialize(e::UntagEffect)) = checkeffect(tn, e, delegates(Taggable(), tn))
+checkeffect(tn, @nospecialize(e::UntagEffect), ::DelegateTo) = checkeffect(delegate(Taggable(), tn), e)
+
+function checkeffect(tn, @nospecialize(e::UntagEffect{<:Site}))
+    hassite(tn, e.tag) || throw(ArgumentError("Site $(e.tag) not found in TensorNetwork"))
+end
+
+function checkeffect(tn, @nospecialize(e::UntagEffect{<:Link}))
+    haslink(tn, e.tag) || throw(ArgumentError("Link $(e.tag) not found in TensorNetwork"))
+end
+
+handle!(tn, @nospecialize(e::E)) where {E<:UntagEffect} = handle!(tn, e, delegates(Taggable(), tn))
+handle!(tn, @nospecialize(e::E), ::DelegateTo) where {E<:UntagEffect} = handle!(tn, e, delegate(Taggable(), tn))
+handle!(tn, @nospecialize(e::E), ::DontDelegate) where {E<:UntagEffect} = throw(MissingHandlerException(tn, e))
+
 ## `replace_tag!`
 function replace_tag!(tn, old_tag, new_tag)
-    checkhandle(tn, ReplaceTagEffect(old_tag, new_tag))
-    hastag(tn, old_tag) || throw(ArgumentError("Tag $(old_tag) not found in TensorNetwork"))
-    hastag(tn, new_tag) && throw(ArgumentError("Tag $(new_tag) already exists in TensorNetwork"))
+    checkeffect(tn, ReplaceEffect(old_tag, new_tag))
     replace_tag_inner!(tn, old_tag, new_tag)
-    handle!(tn, ReplaceTagEffect(old_tag, new_tag))
+    handle!(tn, ReplaceEffect(old_tag, new_tag))
     return tn
+end
+
+checkeffect(tn, @nospecialize(e::ReplaceEffect)) = checkeffect(tn, e, delegates(Taggable(), tn))
+checkeffect(tn, @nospecialize(e::ReplaceEffect), ::DelegateTo) = checkeffect(delegate(Taggable(), tn), e)
+
+function checkeffect(tn, @nospecialize(e::ReplaceEffect{<:Site,<:Site}))
+    old_tag = e.old
+    new_tag = e.new
+
+    old_tag == new_tag && return tn
+    hassite(tn, old_tag) || throw(ArgumentError("Site $(old_tag) not found in TensorNetwork"))
+    hassite(tn, new_tag) && throw(ArgumentError("Site $(new_tag) already exists in TensorNetwork"))
+end
+
+function checkeffect(tn, @nospecialize(e::ReplaceEffect{<:Link,<:Link}))
+    old_tag = e.old
+    new_tag = e.new
+
+    old_tag == new_tag && return tn
+    haslink(tn, old_tag) || throw(ArgumentError("Link $(old_tag) not found in TensorNetwork"))
+    haslink(tn, new_tag) && throw(ArgumentError("Link $(new_tag) already exists in TensorNetwork"))
+end
+
+handle!(tn, @nospecialize(e::ReplaceEffect{<:Tag,<:Tag})) = handle!(tn, e, delegates(Taggable(), tn))
+handle!(tn, @nospecialize(e::ReplaceEffect{<:Tag,<:Tag}), ::DelegateTo) = handle!(delegate(Taggable(), tn), e)
+function handle!(tn, @nospecialize(e::ReplaceEffect{<:Tag,<:Tag}), ::DontDelegate)
+    throw(MissingEffectHandlerException(tn, e))
 end
