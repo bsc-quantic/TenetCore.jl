@@ -85,20 +85,20 @@ link(kwargs::NamedTuple{(:like)}, tn) = link(tn; by=isequal, kwargs...)
 link(kwargs::NamedTuple{(:by, :like)}, tn) = link_like(kwargs.by, tn, kwargs.like)
 
 ## `all_sites`
-all_sites(tn) = all_sites(tn, delegates(TensorNetwork(), tn))
-all_sites(tn, ::DelegateTo) = all_sites(delegate(TensorNetwork(), tn))
+all_sites(tn) = all_sites(tn, delegates(Taggable(), tn))
+all_sites(tn, ::DelegateTo) = all_sites(delegate(Taggable(), tn))
 all_sites(tn, ::DontDelegate) = throw(MethodError(all_sites, (tn,)))
 
 ## `all_links`
-all_links(tn) = all_links(tn, delegates(TensorNetwork(), tn))
-all_links(tn, ::DelegateTo) = all_links(delegate(TensorNetwork(), tn))
+all_links(tn) = all_links(tn, delegates(Taggable(), tn))
+all_links(tn, ::DelegateTo) = all_links(delegate(Taggable(), tn))
 all_links(tn, ::DontDelegate) = throw(MethodError(all_links, (tn,)))
 
 ## `all_sites_iter`
 ### helper method to avoid allocations on interation
 ### WARN it may mutate stuff
-all_sites_iter(tn) = all_sites_iter(tn, delegates(TensorNetwork(), tn))
-all_sites_iter(tn, ::DelegateTo) = all_sites_iter(delegate(TensorNetwork(), tn))
+all_sites_iter(tn) = all_sites_iter(tn, delegates(Taggable(), tn))
+all_sites_iter(tn, ::DelegateTo) = all_sites_iter(delegate(Taggable(), tn))
 function all_sites_iter(tn, ::DontDelegate)
     @debug "Falling back to default `all_sites_iter` method"
     sites(tn)
@@ -107,21 +107,21 @@ end
 ## `all_links_iter`
 ### helper method to avoid allocations on interation
 ### WARN it may mutate stuff
-all_links_iter(tn) = all_links_iter(tn, delegates(TensorNetwork(), tn))
-all_links_iter(tn, ::DelegateTo) = all_links_iter(delegate(TensorNetwork(), tn))
+all_links_iter(tn) = all_links_iter(tn, delegates(Taggable(), tn))
+all_links_iter(tn, ::DelegateTo) = all_links_iter(delegate(Taggable(), tn))
 all_links_iter(tn, ::DontDelegate) = links(tn)
 
 ## `hassite`
-hassite(tn, site) = hassite(tn, site, delegates(TensorNetwork(), tn))
-hassite(tn, site, ::DelegateTo) = hassite(delegate(TensorNetwork(), tn), site)
+hassite(tn, site) = hassite(tn, site, delegates(Taggable(), tn))
+hassite(tn, site, ::DelegateTo) = hassite(delegate(Taggable(), tn), site)
 function hassite(tn, site, ::DontDelegate)
     @debug "Falling back to default `hassite` method"
     site ∈ all_sites(tn)
 end
 
 ## `haslink`
-haslink(tn, link) = haslink(tn, link, delegates(TensorNetwork(), tn))
-haslink(tn, link, ::DelegateTo) = haslink(delegate(TensorNetwork(), tn), link)
+haslink(tn, link) = haslink(tn, link, delegates(Taggable(), tn))
+haslink(tn, link, ::DelegateTo) = haslink(delegate(Taggable(), tn), link)
 function haslink(tn, link, ::DontDelegate)
     @debug "Falling back to default `haslink` method"
     link ∈ all_links(tn)
@@ -129,12 +129,12 @@ end
 
 ## `nsites`
 nsites(tn; kwargs...) = nsites(sort_nt(values(kwargs)), tn)
-nsites(::@NamedTuple{}, tn) = nsites((;), tn, delegates(TensorNetwork(), tn))
-nsites(::@NamedTuple{}, tn, ::DelegateTo) = nsites(delegate(TensorNetwork(), tn))
+nsites(::@NamedTuple{}, tn) = nsites((;), tn, delegates(Taggable(), tn))
+nsites(::@NamedTuple{}, tn, ::DelegateTo) = nsites(delegate(Taggable(), tn))
 
 function nsites(::@NamedTuple{}, tn, ::DontDelegate)
     @debug "Falling back to default `nsites` method"
-    length(sites(kwargs, tn))
+    length(sites(tn))
 end
 
 function nsites(kwargs::NamedTuple, tn)
@@ -144,8 +144,8 @@ end
 
 ## `nlinks`
 nlinks(tn; kwargs...) = nlinks(sort_nt(values(kwargs)), tn)
-nlinks(::@NamedTuple{}, tn) = nlinks((;), tn, delegates(TensorNetwork(), tn))
-nlinks(::@NamedTuple{}, tn, ::DelegateTo) = nlinks(delegate(TensorNetwork(), tn))
+nlinks(::@NamedTuple{}, tn) = nlinks((;), tn, delegates(Taggable(), tn))
+nlinks(::@NamedTuple{}, tn, ::DelegateTo) = nlinks(delegate(Taggable(), tn))
 
 function nlinks(::@NamedTuple{}, tn, ::DontDelegate)
     @debug "Falling back to default `nlinks` method"
@@ -158,23 +158,23 @@ function nlinks(kwargs::NamedTuple, tn)
 end
 
 ## `tensor_at`
-tensor_at(tn, tag) = tensor_at(tn, tag, delegates(TensorNetwork(), tn))
-tensor_at(tn, tag, ::DelegateTo) = tensor_at(delegate(TensorNetwork(), tn), tag)
+tensor_at(tn, tag) = tensor_at(tn, tag, delegates(Taggable(), tn))
+tensor_at(tn, tag, ::DelegateTo) = tensor_at(delegate(Taggable(), tn), tag)
 tensor_at(tn, tag, ::DontDelegate) = throw(MethodError(tensor_at, (tn, tag)))
 
 ## `ind_at`
-ind_at(tn, tag) = ind_at(tn, tag, delegates(TensorNetwork(), tn))
-ind_at(tn, tag, ::DelegateTo) = ind_at(delegate(TensorNetwork(), tn), tag)
+ind_at(tn, tag) = ind_at(tn, tag, delegates(Taggable(), tn))
+ind_at(tn, tag, ::DelegateTo) = ind_at(delegate(Taggable(), tn), tag)
 ind_at(tn, tag, ::DontDelegate) = throw(MethodError(ind_at, (tn, tag)))
 
 ## `site_at`
-site_at(tn, x) = site_at(tn, x, delegates(TensorNetwork(), tn))
-site_at(tn, x, ::DelegateTo) = site_at(delegate(TensorNetwork(), tn), x)
+site_at(tn, x) = site_at(tn, x, delegates(Taggable(), tn))
+site_at(tn, x, ::DelegateTo) = site_at(delegate(Taggable(), tn), x)
 site_at(tn, x, ::DontDelegate) = throw(MethodError(site_at, (tn, x)))
 
 ## `link_at`
-link_at(tn, x) = link_at(tn, x, delegates(TensorNetwork(), tn))
-link_at(tn, x, ::DelegateTo) = link_at(delegate(TensorNetwork(), tn), x)
+link_at(tn, x) = link_at(tn, x, delegates(Taggable(), tn))
+link_at(tn, x, ::DelegateTo) = link_at(delegate(Taggable(), tn), x)
 link_at(tn, x, ::DontDelegate) = throw(MethodError(link_at, (tn, x)))
 
 ## `size_link`
@@ -203,13 +203,13 @@ function link_like(isequal_f, tn, ref_link)
 end
 
 ## `tag_inner!`
-tag_inner!(tn, x, tag) = tag_inner!(tn, x, tag, delegates(TensorNetwork(), tn))
-tag_inner!(tn, x, tag, ::DelegateTo) = tag!(delegate(TensorNetwork(), tn), x, tag)
+tag_inner!(tn, x, tag) = tag_inner!(tn, x, tag, delegates(Taggable(), tn))
+tag_inner!(tn, x, tag, ::DelegateTo) = tag!(delegate(Taggable(), tn), x, tag)
 tag_inner!(tn, x, tag, ::DontDelegate) = throw(MethodError(tag_inner!, (tn, x, tag)))
 
 ## `untag_inner!`
-untag_inner!(tn, tag) = untag_inner!(tn, tag, delegates(TensorNetwork(), tn))
-untag_inner!(tn, tag, ::DelegateTo) = untag!(delegate(TensorNetwork(), tn), tag)
+untag_inner!(tn, tag) = untag_inner!(tn, tag, delegates(Taggable(), tn))
+untag_inner!(tn, tag, ::DelegateTo) = untag!(delegate(Taggable(), tn), tag)
 untag_inner!(tn, tag, ::DontDelegate) = throw(MethodError(untag_inner!, (tn, tag)))
 
 ## `replace_tag_inner!`
