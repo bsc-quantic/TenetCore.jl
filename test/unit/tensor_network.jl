@@ -50,6 +50,14 @@ TenetNext.handle!(::MockTensorNetwork, ::TenetNext.DeleteEffect{<:Tensor}) = not
 TenetNext.handle!(::MockTensorNetwork, ::TenetNext.ReplaceEffect{<:Tensor,<:Tensor}) = nothing
 TenetNext.handle!(::MockTensorNetwork, ::TenetNext.ReplaceEffect{<:Index,<:Index}) = nothing
 
+struct WrapperTensorNetwork{T} <: TenetNext.AbstractTensorNetwork
+    tn::T
+end
+
+Base.copy(tn::WrapperTensorNetwork) = WrapperTensorNetwork(copy(tn.tn))
+TenetNext.delegates(::TenetNext.UnsafeScopeable, ::WrapperTensorNetwork) = TenetNext.DelegateTo{:tn}()
+TenetNext.delegates(::TenetNext.TensorNetwork, ::WrapperTensorNetwork) = TenetNext.DelegateTo{:tn}()
+
 test_tensors = [
     Tensor(rand(ComplexF64, 2, 3), Index.([:i, :j])),
     Tensor(rand(ComplexF64, 3, 4), Index.([:j, :k])),
@@ -63,7 +71,12 @@ test_inds_hyper = [Index(:j)]
 
 test_size = Dict(Index(:i) => 2, Index(:j) => 3, Index(:k) => 4)
 
-@testset "$(typeof(tn))" for tn in [MockTensorNetwork(test_tensors), GenericTensorNetwork(test_tensors)]
+@testset "$(typeof(tn))" for tn in [
+    MockTensorNetwork(test_tensors),
+    GenericTensorNetwork(test_tensors),
+    WrapperTensorNetwork(MockTensorNetwork(test_tensors)),
+    WrapperTensorNetwork(GenericTensorNetwork(test_tensors)),
+]
     @testset "all_tensors" begin
         @test issetequal(tensors(tn), test_tensors)
     end
@@ -127,8 +140,10 @@ test_size = Dict(Index(:i) => 2, Index(:j) => 3, Index(:k) => 4)
         @test issetequal(tensors_with_inds(tn, [Index(:k), Index(:j)]), [test_tensors[2], test_tensors[3]])
 
         # returning nothing should be type-stable
-        @test isempty(tensors_with_inds(tn, [Index(:not_index)])) broken = tn isa GenericTensorNetwork
-        @test tensors_with_inds(tn, [Index(:not_index)]) isa Vector{<:Tensor} broken = tn isa GenericTensorNetwork
+        @test isempty(tensors_with_inds(tn, [Index(:not_index)])) broken =
+            tn isa GenericTensorNetwork || tn isa WrapperTensorNetwork{GenericTensorNetwork}
+        @test tensors_with_inds(tn, [Index(:not_index)]) isa Vector{<:Tensor} broken =
+            tn isa GenericTensorNetwork || tn isa WrapperTensorNetwork{GenericTensorNetwork}
     end
 
     @testset "tensors_contain_inds" begin
@@ -144,8 +159,10 @@ test_size = Dict(Index(:i) => 2, Index(:j) => 3, Index(:k) => 4)
         @test issetequal(tensors_contain_inds(tn, [Index(:j), Index(:i)]), [test_tensors[1]])
 
         # returning nothing should be type-stable
-        @test isempty(tensors_contain_inds(tn, [Index(:not_index)])) broken = tn isa GenericTensorNetwork
-        @test tensors_contain_inds(tn, [Index(:not_index)]) isa Vector{<:Tensor} broken = tn isa GenericTensorNetwork
+        @test isempty(tensors_contain_inds(tn, [Index(:not_index)])) broken =
+            tn isa GenericTensorNetwork || tn isa WrapperTensorNetwork{GenericTensorNetwork}
+        @test tensors_contain_inds(tn, [Index(:not_index)]) isa Vector{<:Tensor} broken =
+            tn isa GenericTensorNetwork || tn isa WrapperTensorNetwork{GenericTensorNetwork}
     end
 
     @testset "tensors_intersect_inds" begin

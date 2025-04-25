@@ -90,7 +90,7 @@ all_tensors(tn, ::DontDelegate) = throw(MethodError(all_tensors, (tn,)))
 
 ## `all_inds`
 all_inds(tn) = all_inds(tn, delegates(TensorNetwork(), tn))
-all_inds(tn, ::DelegateTo) = all_tensors(delegate(TensorNetwork(), tn))
+all_inds(tn, ::DelegateTo) = all_inds(delegate(TensorNetwork(), tn))
 function all_inds(tn, ::DontDelegate)
     @debug "Falling back to default `all_inds` method"
     mapreduce(inds, ∪, tensors(tn); init=Index[])
