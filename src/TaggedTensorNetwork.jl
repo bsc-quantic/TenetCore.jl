@@ -4,7 +4,7 @@ const LinkBiDict = BijectiveDict{Link,Index,Dict{Link,Index},Dict{Index,Link}}
 const SiteBiDict = BijectiveDict{Site,Tensor,Dict{Site,Tensor},IdDict{Tensor,Site}}
 
 @kwdef struct TaggedTensorNetwork <: AbstractTensorNetwork
-    tn::GenericTensorNetwork
+    tn::GenericTensorNetwork = GenericTensorNetwork()
 
     linkmap::LinkBiDict = LinkBiDict()
     sitemap::SiteBiDict = SiteBiDict()
