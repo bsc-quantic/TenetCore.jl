@@ -216,7 +216,7 @@ untag_inner!(tn, tag, ::DontDelegate) = throw(MethodError(untag_inner!, (tn, tag
 
 ## `replace_tag_inner!`
 replace_tag_inner!(tn, old_tag, new_tag) = replace_tag_inner!(tn, old_tag, new_tag, delegates(Taggable(), tn))
-replace_tag_inner!(tn, old_tag, new_tag, ::DelegateTo) = replace_tag!(tn, old_tag, new_tag)
+replace_tag_inner!(tn, old_tag, new_tag, ::DelegateTo) = replace_tag!(delegate(Taggable(), tn), old_tag, new_tag)
 
 function replace_tag_inner!(tn, old_tag::Site, new_tag::Site, ::DontDelegate)
     @debug "Falling back to the default `replace_tag_inner!` method"
@@ -264,7 +264,7 @@ function checkeffect(tn, @nospecialize(e::TagEffect{<:Link,<:Index}))
 end
 
 handle!(tn, @nospecialize(e::E)) where {E<:TagEffect} = handle!(tn, e, delegates(Taggable(), tn))
-handle!(tn, @nospecialize(e::E), ::DelegateTo) where {E<:TagEffect} = handle!(tn, e, delegate(Taggable(), tn))
+handle!(tn, @nospecialize(e::E), ::DelegateTo) where {E<:TagEffect} = handle!(delegate(Taggable(), tn), e)
 handle!(tn, @nospecialize(e::E), ::DontDelegate) where {E<:TagEffect} = throw(MissingHandlerException(tn, e))
 
 ## `untag!`
@@ -287,7 +287,7 @@ function checkeffect(tn, @nospecialize(e::UntagEffect{<:Link}))
 end
 
 handle!(tn, @nospecialize(e::E)) where {E<:UntagEffect} = handle!(tn, e, delegates(Taggable(), tn))
-handle!(tn, @nospecialize(e::E), ::DelegateTo) where {E<:UntagEffect} = handle!(tn, e, delegate(Taggable(), tn))
+handle!(tn, @nospecialize(e::E), ::DelegateTo) where {E<:UntagEffect} = handle!(delegate(Taggable(), tn), e)
 handle!(tn, @nospecialize(e::E), ::DontDelegate) where {E<:UntagEffect} = throw(MissingHandlerException(tn, e))
 
 ## `replace_tag!`
