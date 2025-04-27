@@ -260,6 +260,7 @@ function replace_tensor_inner!(tn, old_tensor, new_tensor, ::DontDelegate)
         @argcheck issetequal(inds(new_tensor), inds(old_tensor)) "replacing tensor indices don't match"
     end
 
+    # TODO shouldn't we call `*_inner!` methods instead? their effects might have side effects
     rmtensor!(tn, old_tensor)
     addtensor!(tn, new_tensor)
 end

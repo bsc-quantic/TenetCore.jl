@@ -70,15 +70,11 @@ end
 
 handle!(::TaggedTensorNetwork, @nospecialize(e::TagEffect{L,I})) where {L<:Link,I<:Index} = nothing
 
-function untag_inner!(tn::TaggedTensorNetwork, site::Site)
-    delete!(tn.sitemap, site)
-end
+untag_inner!(tn::TaggedTensorNetwork, site::Site) = delete!(tn.sitemap, site)
 
 handle!(::TaggedTensorNetwork, @nospecialize(e::UntagEffect{S})) where {S<:Site} = nothing
 
-function untag_inner!(tn::TaggedTensorNetwork, link::Link)
-    delete!(tn.linkmap, link)
-end
+untag_inner!(tn::TaggedTensorNetwork, link::Link) = delete!(tn.linkmap, link)
 
 handle!(::TaggedTensorNetwork, @nospecialize(e::UntagEffect{L})) where {L<:Link} = nothing
 
