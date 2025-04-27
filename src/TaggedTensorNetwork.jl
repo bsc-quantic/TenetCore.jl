@@ -25,13 +25,21 @@ delegates(::TensorNetwork, ::TaggedTensorNetwork) = DelegateTo{:tn}()
 ## removing tensor breaks mapping
 ## TODO for index removal?
 function handle!(tn::TaggedTensorNetwork, e::DeleteEffect{<:Tensor})
-    untag_inner!(tn, site_at(e.f))
-    handle!(tn.tn, e)
+    if haskey(tn.sitemap', e.f)
+        site_tag = site_at(tn, e.f)
+        untag_inner!(tn, site_tag)
+    end
+    handle!(delegate(TensorNetwork(), tn), e)
 end
 
 ## replacing tensor/index breaks mapping
 function handle!(tn::TaggedTensorNetwork, e::ReplaceEffect{<:Tensor,<:Tensor})
-    # TODO
+    if haskey(tn.sitemap', e.old)
+        site_tag = site_at(tn, e.old)
+        untag_inner!(tn, site_tag)
+        tag_inner!(tn, e.new, site_tag)
+    end
+    handle!(delegate(TensorNetwork(), tn), e)
 end
 
 # Taggable implementation
