@@ -1,6 +1,6 @@
 using Test
-using TenetNext
-using TenetNext: LinkBiDict, SiteBiDict
+using TenetCore
+using TenetCore: LinkBiDict, SiteBiDict
 using QuantumTags
 
 struct MockSite{S} <: Site
@@ -17,14 +17,14 @@ end
 QuantumTags.isplug(x::MockLink) = isplug(x.tag)
 QuantumTags.plug(x::MockLink) = plug(x.tag)
 
-struct WrapperTaggedTensorNetwork{T} <: TenetNext.AbstractTensorNetwork
+struct WrapperTaggedTensorNetwork{T} <: TenetCore.AbstractTensorNetwork
     tn::T
 end
 
 Base.copy(tn::WrapperTaggedTensorNetwork) = WrapperTaggedTensorNetwork(copy(tn.tn))
-TenetNext.delegates(::TenetNext.UnsafeScopeable, ::WrapperTaggedTensorNetwork) = TenetNext.DelegateTo{:tn}()
-TenetNext.delegates(::TenetNext.TensorNetwork, ::WrapperTaggedTensorNetwork) = TenetNext.DelegateTo{:tn}()
-TenetNext.delegates(::TenetNext.Taggable, ::WrapperTaggedTensorNetwork) = TenetNext.DelegateTo{:tn}()
+TenetCore.delegates(::TenetCore.UnsafeScopeable, ::WrapperTaggedTensorNetwork) = TenetCore.DelegateTo{:tn}()
+TenetCore.delegates(::TenetCore.TensorNetwork, ::WrapperTaggedTensorNetwork) = TenetCore.DelegateTo{:tn}()
+TenetCore.delegates(::TenetCore.Taggable, ::WrapperTaggedTensorNetwork) = TenetCore.DelegateTo{:tn}()
 
 test_tensors = [
     Tensor(zeros(2, 2), [Index(:i), Index(:j)]),

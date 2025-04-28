@@ -1,6 +1,6 @@
 using Test
 using SafeTestsets
-using TenetNext
+using TenetCore
 
 @testset "Unit" verbose = true begin
     @testset "TensorNetwork" verbose = true include("unit/tensor_network.jl")

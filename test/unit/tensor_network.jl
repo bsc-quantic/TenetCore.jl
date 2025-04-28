@@ -1,20 +1,20 @@
 using Test
-using TenetNext
+using TenetCore
 
-struct MockTensorNetwork <: TenetNext.AbstractTensorNetwork
+struct MockTensorNetwork <: TenetCore.AbstractTensorNetwork
     tensors::Vector{Tensor}
-    unsafe_scope::Ref{Union{Nothing,TenetNext.UnsafeScope}}
+    unsafe_scope::Ref{Union{Nothing,TenetCore.UnsafeScope}}
 
     MockTensorNetwork(tensors; unsafe=nothing) = new(tensors, unsafe)
 end
 
 # UnsafeScopeable implementation
-TenetNext.get_unsafe_scope(tn::MockTensorNetwork) = tn.unsafe_scope[]
-TenetNext.set_unsafe_scope!(tn::MockTensorNetwork, uc) = tn.unsafe_scope[] = uc
+TenetCore.get_unsafe_scope(tn::MockTensorNetwork) = tn.unsafe_scope[]
+TenetCore.set_unsafe_scope!(tn::MockTensorNetwork, uc) = tn.unsafe_scope[] = uc
 
 # TensorNetwork implementation
 function Base.copy(tn::MockTensorNetwork)
-    unsafe = Ref{Union{Nothing,TenetNext.UnsafeScope}}(tn.unsafe_scope[])
+    unsafe = Ref{Union{Nothing,TenetCore.UnsafeScope}}(tn.unsafe_scope[])
     new_tn = MockTensorNetwork(copy(tn.tensors); unsafe)
 
     # register the new copy to the proper UnsafeScope
@@ -25,9 +25,9 @@ function Base.copy(tn::MockTensorNetwork)
     return new_tn
 end
 
-TenetNext.all_tensors(tn::MockTensorNetwork) = collect(tn.tensors)
+TenetCore.all_tensors(tn::MockTensorNetwork) = collect(tn.tensors)
 
-function TenetNext.addtensor_inner!(tn::MockTensorNetwork, tensor::Tensor)
+function TenetCore.addtensor_inner!(tn::MockTensorNetwork, tensor::Tensor)
     if hastensor(tn, tensor)
         throw(ArgumentError("tensor already exists in the network"))
     end
@@ -35,9 +35,9 @@ function TenetNext.addtensor_inner!(tn::MockTensorNetwork, tensor::Tensor)
     return tn
 end
 
-TenetNext.handle!(::MockTensorNetwork, ::TenetNext.PushEffect{<:Tensor}) = nothing
+TenetCore.handle!(::MockTensorNetwork, ::TenetCore.PushEffect{<:Tensor}) = nothing
 
-function TenetNext.rmtensor_inner!(tn::MockTensorNetwork, tensor::Tensor)
+function TenetCore.rmtensor_inner!(tn::MockTensorNetwork, tensor::Tensor)
     if !hastensor(tn, tensor)
         throw(ArgumentError("tensor not found in the network"))
     end
@@ -45,18 +45,18 @@ function TenetNext.rmtensor_inner!(tn::MockTensorNetwork, tensor::Tensor)
     return tn
 end
 
-TenetNext.handle!(::MockTensorNetwork, ::TenetNext.DeleteEffect{<:Tensor}) = nothing
+TenetCore.handle!(::MockTensorNetwork, ::TenetCore.DeleteEffect{<:Tensor}) = nothing
 
-TenetNext.handle!(::MockTensorNetwork, ::TenetNext.ReplaceEffect{<:Tensor,<:Tensor}) = nothing
-TenetNext.handle!(::MockTensorNetwork, ::TenetNext.ReplaceEffect{<:Index,<:Index}) = nothing
+TenetCore.handle!(::MockTensorNetwork, ::TenetCore.ReplaceEffect{<:Tensor,<:Tensor}) = nothing
+TenetCore.handle!(::MockTensorNetwork, ::TenetCore.ReplaceEffect{<:Index,<:Index}) = nothing
 
-struct WrapperTensorNetwork{T} <: TenetNext.AbstractTensorNetwork
+struct WrapperTensorNetwork{T} <: TenetCore.AbstractTensorNetwork
     tn::T
 end
 
 Base.copy(tn::WrapperTensorNetwork) = WrapperTensorNetwork(copy(tn.tn))
-TenetNext.delegates(::TenetNext.UnsafeScopeable, ::WrapperTensorNetwork) = TenetNext.DelegateTo{:tn}()
-TenetNext.delegates(::TenetNext.TensorNetwork, ::WrapperTensorNetwork) = TenetNext.DelegateTo{:tn}()
+TenetCore.delegates(::TenetCore.UnsafeScopeable, ::WrapperTensorNetwork) = TenetCore.DelegateTo{:tn}()
+TenetCore.delegates(::TenetCore.TensorNetwork, ::WrapperTensorNetwork) = TenetCore.DelegateTo{:tn}()
 
 test_tensors = [
     Tensor(rand(ComplexF64, 2, 3), Index.([:i, :j])),

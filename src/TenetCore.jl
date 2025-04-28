@@ -1,4 +1,4 @@
-module TenetNext
+module TenetCore
 
 import EinExprs: inds
 
