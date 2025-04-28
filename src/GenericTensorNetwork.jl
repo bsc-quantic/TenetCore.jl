@@ -4,6 +4,7 @@ using Muscle: ImmutableVector
 using BijectiveDicts: BijectiveDict, BijectiveIdDict
 using Serialization
 using Random
+using Base: IdSet
 
 @kwdef struct GenericTensorNetwork <: AbstractTensorNetwork
     indmap::Dict{Index,Vector{Tensor}} = Dict{Index,Vector{Tensor}}()
