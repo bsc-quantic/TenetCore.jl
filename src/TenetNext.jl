@@ -5,9 +5,10 @@ import EinExprs: inds
 # reexports
 import QuantumTags: Tag, Site, Link
 import QuantumTags: CartesianSite, @site_str, issite, site, sites, is_site_equal
-import QuantumTags: Bond, @bond_str, bond, isbond
+import QuantumTags: Bond, @bond_str, bond, isbond, hassite
 import QuantumTags: Plug, @plug_str, isplug, plug, is_plug_equal, isdual
-export Site, Link, CartesianSite, Bond, Plug, @site_str, @plug_str, @bond_str, site, sites, plug, isplug, bond, isbond
+export Site,
+    Link, CartesianSite, Bond, Plug, @site_str, @plug_str, @bond_str, site, sites, plug, isplug, bond, isbond, hassite
 
 import Muscle: Tensor, Index
 export Tensor, Index
