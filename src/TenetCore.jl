@@ -39,10 +39,10 @@ export tag!, untag!, replace_tag!
 export plugs, plug, nplugs, hasplug, plugs_like, plug_like, ind_at_plug, plugs_like, plug_like, align!, @align!
 
 # implementations
-include("GenericTensorNetwork.jl")
+include("Components/GenericTensorNetwork.jl")
 export GenericTensorNetwork
 
-include("TaggedTensorNetwork.jl")
+include("Components/TaggedTensorNetwork.jl")
 export TaggedTensorNetwork
 
 end
