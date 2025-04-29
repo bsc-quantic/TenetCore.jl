@@ -39,6 +39,13 @@ jobs:
           - ubuntu-latest
         arch:
           - x64
+        downgrade: ['false']
+        include:
+          - version: '1.10'
+            test_group: unit
+            os: ubuntu-latest
+            arch: x64
+            downgrade: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@v1
@@ -55,6 +62,8 @@ jobs:
           pkg"registry add https://github.com/bsc-quantic/Registry.git"
           pkg"registry add General"
         shell: julia --color=yes {0}
+      - uses: julia-actions/julia-downgrade-compat@v1
+        if: ${{ matrix.downgrade == 'true' }}
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
         env:
