@@ -15,7 +15,14 @@ Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 ValSplit = "0625e100-946b-11ec-09cd-6328dd093154"
 
+[weakdeps]
+Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
+
+[extensions]
+TenetCoreAdaptExt = ["Adapt"]
+
 [compat]
+Adapt = "4"
 ArgCheck = "2.5.0"
 BijectiveDicts = "0.2.1"
 EinExprs = "0.6.8"
