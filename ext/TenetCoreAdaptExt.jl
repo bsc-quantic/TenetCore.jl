@@ -6,7 +6,7 @@ using Adapt
 # TODO move to Muscle
 # Adapt.adapt_structure(to, x::Tensor) = Tensor(adapt(to, parent(x)), inds(x))
 
-function Adapt.adapt_structure(to, x::AbstractTensorNetwork)
+function Adapt.adapt_structure(to, x::TenetCore.AbstractTensorNetwork)
     y = copy(x)
 
     for tensor in all_tensors(y)
