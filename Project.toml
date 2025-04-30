@@ -7,7 +7,6 @@ version = "0.1.0"
 ArgCheck = "dce04be8-c92d-5529-be00-80e4d2c0e197"
 BijectiveDicts = "d089a002-103b-496c-a4e3-58f90cf955b0"
 EinExprs = "b1794770-133b-4de1-afb4-526377e9f4c5"
-Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Muscle = "21fe5c4b-a943-414d-bf3e-516f24900631"
 QuantumTags = "2406e0f5-9e5e-4424-966e-8bc9c78b228f"
@@ -17,16 +16,18 @@ ValSplit = "0625e100-946b-11ec-09cd-6328dd093154"
 
 [weakdeps]
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
+Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
 
 [extensions]
 TenetCoreAdaptExt = ["Adapt"]
+TenetCoreGraphsExt = ["Graphs"]
 
 [compat]
 Adapt = "4"
 ArgCheck = "2.5.0"
 BijectiveDicts = "0.2.1"
 EinExprs = "0.6.8"
-Graphs = "1.12.1"
+Graphs = "1.12"
 LinearAlgebra = "1.10.0"
 Muscle = "0.3"
 QuantumTags = "0.1.2"
