@@ -31,6 +31,12 @@ function inds_set_inputs end
 function inds_set_outputs end
 
 # mutating methods
+# function set_plug_inner! end
+# function unset_plug_inner! end
+
+# function set_plug! end
+# function unset_plug! end
+
 function adjoint_plugs! end
 
 # implementation
@@ -47,7 +53,7 @@ plug(::NamedTuple{(:like,)}, tn) = plug_like(tn, kwargs.like)
 ## `all_plugs`
 all_plugs(tn) = all_plugs(tn, delegates(Pluggable(), tn))
 all_plugs(tn, ::DelegateTo) = all_plugs(delegate(Pluggable(), tn))
-all_plugs(tn, ::DontDelegate) = filter(isplug, all_links_iter(tn))
+all_plugs(tn, ::DontDelegate) = throw(MethodError(all_plugs, (tn,)))
 
 ## `all_plugs_iter`
 all_plugs_iter(tn) = all_plugs_iter(tn, delegates(Pluggable(), tn))

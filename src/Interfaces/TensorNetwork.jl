@@ -818,6 +818,7 @@ function fuse!(tn, i)
     parinds = filter!(!=(i), inds(tn; parallelto=i))
     length(parinds) == 0 && return tn
 
+    # TODO replace ind for `Index(Fused(parinds))`?
     parinds = (i,) ∪ parinds
     newtensors = map(Base.Fix2(fuse, parinds), pop!(tn, parinds))
 

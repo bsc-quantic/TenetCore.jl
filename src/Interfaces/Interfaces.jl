@@ -12,6 +12,13 @@ delegate(interface, x) = delegate(interface, x, delegates(interface, x))
 delegate(interface, _, ::DontDelegate) = throw(ArgumentError("Cannot delegate to $interface"))
 delegate(interface, x, ::DelegateTo{F}) where {F} = getproperty(x, F)
 
+abstract type InterfaceTrait end
+struct NotImplements <: InterfaceTrait end
+struct Implements <: InterfaceTrait end
+struct Delegates <: InterfaceTrait end
+
+implements(interface, x) = NotImplements()
+
 # NOTE for developers
 # try using functions owned by us (e.g. `mysize` instead of `Base.size`)
 # aliases to `Base` come after and can be removed if problematic
@@ -20,4 +27,5 @@ include("Effects.jl")
 include("UnsafeScope.jl")
 include("TensorNetwork.jl")
 include("Taggable.jl")
+# include("Lattice.jl")
 include("Pluggable.jl")
