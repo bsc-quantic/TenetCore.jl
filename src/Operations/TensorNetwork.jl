@@ -88,13 +88,11 @@ function contract(tn; optimizer=EinExprs.Greedy(), path=EinExprs.einexpr(tn; opt
     for intermediate in EinExprs.Branches(path)
         if EinExprs.nargs(intermediate) == 1
             a = only(EinExprs.args(intermediate))
-            cache[intermediate] = Muscle.Operations.unary_einsum(cache[a]; dims=EinExprs.suminds(intermediate))
+            cache[intermediate] = Muscle.unary_einsum(cache[a]; dims=EinExprs.suminds(intermediate))
             delete!(cache, a)
         elseif EinExprs.nargs(intermediate) == 2
             a, b = EinExprs.args(intermediate)
-            cache[intermediate] = Muscle.Operations.binary_einsum(
-                cache[a], cache[b]; dims=EinExprs.suminds(intermediate)
-            )
+            cache[intermediate] = Muscle.binary_einsum(cache[a], cache[b]; dims=EinExprs.suminds(intermediate))
             delete!(cache, a)
             delete!(cache, b)
         else
@@ -104,7 +102,7 @@ function contract(tn; optimizer=EinExprs.Greedy(), path=EinExprs.einexpr(tn; opt
                 pop!(cache, branch)
             end
             cache[intermediate] = foldl(target_tensors) do a, b
-                Muscle.Operations.binary_einsum(a, b; dims=EinExprs.suminds(intermediate))
+                Muscle.binary_einsum(a, b; dims=EinExprs.suminds(intermediate))
             end
         end
     end
