@@ -16,10 +16,13 @@ ValSplit = "0625e100-946b-11ec-09cd-6328dd093154"
 
 [weakdeps]
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
+GraphMakie = "1ecd5474-83a3-4783-bb4f-06765db800d2"
 Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 
 [extensions]
 TenetCoreAdaptExt = ["Adapt"]
+TenetCoreGraphMakieExt = ["Makie", "Graphs", "GraphMakie"]
 TenetCoreGraphsExt = ["Graphs"]
 
 [compat]
@@ -27,8 +30,10 @@ Adapt = "4"
 ArgCheck = "2.5.0"
 BijectiveDicts = "0.2.1"
 EinExprs = "0.6.8"
+GraphMakie = "0.4, 0.5"
 Graphs = "1.12"
 LinearAlgebra = "1.10.0"
+Makie = "0.20, 0.21, 0.22"
 Muscle = "0.3.1"
 QuantumTags = "0.1.2"
 Random = "1.10.0"
