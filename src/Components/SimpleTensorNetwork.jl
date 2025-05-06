@@ -82,8 +82,9 @@ function all_tensors(tn::SimpleTensorNetwork)
     end
 end
 
+all_tensors_iter(tn::SimpleTensorNetwork) = tn.tensors
+
 all_inds(tn::SimpleTensorNetwork) = collect(keys(tn.indmap))
-all_tensors_iter(tn::SimpleTensorNetwork) = keys(tn.tensors)
 all_inds_iter(tn::SimpleTensorNetwork) = keys(tn.indmap)
 
 hastensor(tn::SimpleTensorNetwork, tensor) = in(tensor, tn.tensors)

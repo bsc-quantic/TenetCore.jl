@@ -99,6 +99,22 @@ function all_inds(tn, ::DontDelegate)
     mapreduce(inds, ∪, tensors(tn); init=Index[])
 end
 
+## `all_tensors_iter`
+all_tensors_iter(tn) = all_tensors_iter(tn, delegates(TensorNetwork(), tn))
+all_tensors_iter(tn, ::DelegateTo) = all_tensors_iter(delegate(TensorNetwork(), tn))
+function all_tensors_iter(tn, ::DontDelegate)
+    @debug "Falling back to default `all_tensors_iter` method"
+    all_tensors(tn)
+end
+
+## `all_inds_iter`
+all_inds_iter(tn) = all_inds_iter(tn, delegates(TensorNetwork(), tn))
+all_inds_iter(tn, ::DelegateTo) = all_inds_iter(delegate(TensorNetwork(), tn))
+function all_inds_iter(tn, ::DontDelegate)
+    @debug "Falling back to default `all_inds_iter` method"
+    all_inds(tn)
+end
+
 ## `hastensor`
 hastensor(tn, tensor) = hastensor(tn, tensor, delegates(TensorNetwork(), tn))
 hastensor(tn, tensor, ::DelegateTo) = hastensor(delegate(TensorNetwork(), tn), tensor)
