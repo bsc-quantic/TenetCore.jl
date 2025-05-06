@@ -1,5 +1,8 @@
 [deps]
+Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+Chairmarks = "0ca39b1e-fe0b-4e98-acfc-b1656634c4de"
+Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
 GraphMakie = "1ecd5474-83a3-4783-bb4f-06765db800d2"
 NetworkLayout = "46757867-2c16-5918-afeb-47bfcb05e46a"
 Reactant = "3c362404-f566-11ee-1572-e11a4b42c853"
