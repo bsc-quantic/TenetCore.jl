@@ -307,6 +307,7 @@ function replace_tag!(tn, old_tag, new_tag)
     handle!(tn, ReplaceEffect(old_tag, new_tag))
     return tn
 end
+replace_tag!(tn, old_new::Pair) = replace_tag!(tn, old_new.first, old_new.second)
 
 checkeffect(tn, @nospecialize(e::ReplaceEffect)) = checkeffect(tn, e, delegates(Taggable(), tn))
 checkeffect(tn, @nospecialize(e::ReplaceEffect), ::DelegateTo) = checkeffect(delegate(Taggable(), tn), e)

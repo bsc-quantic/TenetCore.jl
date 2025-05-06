@@ -356,6 +356,7 @@ function replace_tensor!(tn, old_tensor, new_tensor)
     handle!(tn, ReplaceEffect(old_tensor, new_tensor))
     return tn
 end
+replace_tensor!(tn, old_new::Pair) = replace_tensor!(tn, old_new.first, old_new.second)
 
 checkeffect(tn, @nospecialize(e::ReplaceEffect{<:Tensor,<:Tensor})) = checkeffect(tn, e, delegates(TensorNetwork(), tn))
 function checkeffect(tn, @nospecialize(e::ReplaceEffect{<:Tensor,<:Tensor}), ::DelegateTo)
@@ -385,6 +386,7 @@ function replace_ind!(tn, old_ind, new_ind)
     handle!(tn, ReplaceEffect(old_ind, new_ind))
     return tn
 end
+replace_ind!(tn, old_new::Pair) = replace_ind!(tn, old_new.first, old_new.second)
 
 checkeffect(tn, @nospecialize(e::ReplaceEffect{<:Index,<:Index})) = checkeffect(tn, e, delegates(TensorNetwork(), tn))
 function checkeffect(tn, @nospecialize(e::ReplaceEffect{<:Index,<:Index}), ::DelegateTo)
