@@ -19,11 +19,13 @@ Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
 GraphMakie = "1ecd5474-83a3-4783-bb4f-06765db800d2"
 Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+Reactant = "3c362404-f566-11ee-1572-e11a4b42c853"
 
 [extensions]
 TenetCoreAdaptExt = ["Adapt"]
 TenetCoreGraphMakieExt = ["Makie", "Graphs", "GraphMakie"]
 TenetCoreGraphsExt = ["Graphs"]
+TenetCoreReactantExt = ["Reactant"]
 
 [compat]
 Adapt = "4"
@@ -37,5 +39,6 @@ Makie = "0.20, 0.21, 0.22"
 Muscle = "0.3.1"
 QuantumTags = "0.1.2"
 Random = "1.10.0"
+Reactant = "=0.2.92"
 Serialization = "1.10.0"
 ValSplit = "0.1.1"
