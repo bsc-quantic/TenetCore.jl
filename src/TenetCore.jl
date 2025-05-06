@@ -17,6 +17,10 @@ include("Utils.jl")
 
 include("Interfaces/Interfaces.jl")
 
+include("Operations/TensorNetwork.jl")
+include("Operations/Pluggable.jl")
+include("Operations/AbstractTensorNetwork.jl")
+
 # from UnsafeScopeable
 export @unsafe_region
 
