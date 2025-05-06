@@ -1,7 +1,5 @@
 using QuantumTags
 using QuantumTags: Tag
-using Muscle: ImmutableVector
-using BijectiveDicts: BijectiveDict, BijectiveIdDict
 using Serialization
 using Random
 using Base: IdSet
