@@ -73,9 +73,9 @@ test_size = Dict(Index(:i) => 2, Index(:j) => 3, Index(:k) => 4)
 
 @testset "$(typeof(tn))" for tn in [
     MockTensorNetwork(test_tensors),
-    GenericTensorNetwork(test_tensors),
+    SimpleTensorNetwork(test_tensors),
     WrapperTensorNetwork(MockTensorNetwork(test_tensors)),
-    WrapperTensorNetwork(GenericTensorNetwork(test_tensors)),
+    WrapperTensorNetwork(SimpleTensorNetwork(test_tensors)),
 ]
     @testset "all_tensors" begin
         @test issetequal(tensors(tn), test_tensors)
@@ -141,9 +141,9 @@ test_size = Dict(Index(:i) => 2, Index(:j) => 3, Index(:k) => 4)
 
         # returning nothing should be type-stable
         @test isempty(tensors_with_inds(tn, [Index(:not_index)])) broken =
-            tn isa GenericTensorNetwork || tn isa WrapperTensorNetwork{GenericTensorNetwork}
+            tn isa SimpleTensorNetwork || tn isa WrapperTensorNetwork{SimpleTensorNetwork}
         @test tensors_with_inds(tn, [Index(:not_index)]) isa Vector{<:Tensor} broken =
-            tn isa GenericTensorNetwork || tn isa WrapperTensorNetwork{GenericTensorNetwork}
+            tn isa SimpleTensorNetwork || tn isa WrapperTensorNetwork{SimpleTensorNetwork}
     end
 
     @testset "tensors_contain_inds" begin
@@ -160,9 +160,9 @@ test_size = Dict(Index(:i) => 2, Index(:j) => 3, Index(:k) => 4)
 
         # returning nothing should be type-stable
         @test isempty(tensors_contain_inds(tn, [Index(:not_index)])) broken =
-            tn isa GenericTensorNetwork || tn isa WrapperTensorNetwork{GenericTensorNetwork}
+            tn isa SimpleTensorNetwork || tn isa WrapperTensorNetwork{SimpleTensorNetwork}
         @test tensors_contain_inds(tn, [Index(:not_index)]) isa Vector{<:Tensor} broken =
-            tn isa GenericTensorNetwork || tn isa WrapperTensorNetwork{GenericTensorNetwork}
+            tn isa SimpleTensorNetwork || tn isa WrapperTensorNetwork{SimpleTensorNetwork}
     end
 
     @testset "tensors_intersect_inds" begin

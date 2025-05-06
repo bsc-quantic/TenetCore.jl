@@ -17,14 +17,14 @@ end
 QuantumTags.isplug(x::MockLink) = isplug(x.tag)
 QuantumTags.plug(x::MockLink) = plug(x.tag)
 
-struct WrapperTaggedTensorNetwork{T} <: TenetCore.AbstractTensorNetwork
+struct WrapperTaggableTensorNetwork{T} <: TenetCore.AbstractTensorNetwork
     tn::T
 end
 
-Base.copy(tn::WrapperTaggedTensorNetwork) = WrapperTaggedTensorNetwork(copy(tn.tn))
-TenetCore.delegates(::TenetCore.UnsafeScopeable, ::WrapperTaggedTensorNetwork) = TenetCore.DelegateTo{:tn}()
-TenetCore.delegates(::TenetCore.TensorNetwork, ::WrapperTaggedTensorNetwork) = TenetCore.DelegateTo{:tn}()
-TenetCore.delegates(::TenetCore.Taggable, ::WrapperTaggedTensorNetwork) = TenetCore.DelegateTo{:tn}()
+Base.copy(tn::WrapperTaggableTensorNetwork) = WrapperTaggableTensorNetwork(copy(tn.tn))
+TenetCore.delegates(::TenetCore.UnsafeScopeable, ::WrapperTaggableTensorNetwork) = TenetCore.DelegateTo{:tn}()
+TenetCore.delegates(::TenetCore.TensorNetwork, ::WrapperTaggableTensorNetwork) = TenetCore.DelegateTo{:tn}()
+TenetCore.delegates(::TenetCore.Taggable, ::WrapperTaggableTensorNetwork) = TenetCore.DelegateTo{:tn}()
 
 test_tensors = [
     Tensor(zeros(2, 2), [Index(:i), Index(:j)]),
@@ -32,13 +32,15 @@ test_tensors = [
     Tensor(zeros(2), [Index(:j)]),
 ]
 
-test_tagged_tn = TaggedTensorNetwork(
-    GenericTensorNetwork(test_tensors);
-    linkmap=LinkBiDict(plug"1" => Index(:i), MockLink(plug"2") => Index(:k), bond"1-2" => Index(:j)),
-    sitemap=SiteBiDict(site"1" => test_tensors[1], MockSite(site"2") => test_tensors[2]),
+test_tagged_tn = GenericTensorNetwork(
+    SimpleTensorNetwork(test_tensors),
+    TenetCore.TagMixin(;
+        linkmap=LinkBiDict(plug"1" => Index(:i), MockLink(plug"2") => Index(:k), bond"1-2" => Index(:j)),
+        sitemap=SiteBiDict(site"1" => test_tensors[1], MockSite(site"2") => test_tensors[2]),
+    ),
 )
 
-@testset "$(typeof(test_tn))" for test_tn in [test_tagged_tn, WrapperTaggedTensorNetwork(test_tagged_tn)]
+@testset "$(typeof(test_tn))" for test_tn in [test_tagged_tn, WrapperTaggableTensorNetwork(test_tagged_tn)]
     @testset "all_sites" begin
         @test issetequal(all_sites(test_tn), [site"1", MockSite(site"2")])
     end
