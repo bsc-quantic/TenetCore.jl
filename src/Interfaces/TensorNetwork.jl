@@ -6,6 +6,11 @@ using EinExprs: EinExprs
 using Muscle: Muscle
 
 # interface object
+"""
+    TensorNetwork <: Interface
+
+A singleton type that represents the basic interface of a Tensor Network.
+"""
 struct TensorNetwork <: Interface end
 
 # NOTE do not name it `copy` because it can break calls to `Base.copy`
@@ -57,7 +62,7 @@ function replace_ind! end
 # implementation
 ## `tensors`
 tensors(tn; kwargs...) = tensors(sort_nt(values(kwargs)), tn)
-tensors(::@NamedTuple{}, tn) = all_tensors(tn) # tensors((;), tn, delegates(TensorNetwork(), tn))
+tensors(::@NamedTuple{}, tn) = all_tensors(tn)
 
 # TODO fix grammar error on naming
 tensors(kwargs::NamedTuple{(:contain,)}, tn) = tensors_contain_inds(tn, kwargs.contain)

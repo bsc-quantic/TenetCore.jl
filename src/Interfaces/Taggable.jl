@@ -1,6 +1,16 @@
 using QuantumTags: Tag
 
+# TODO it has a lot of overlap with the `Lattice` interface
+# TODO try decoupling `Site` and `Link`, and allow setting any `Tag`
+# TODO try defining `Base.getindex` / `Base.setindex`
+
 # interface object
+"""
+    Taggable <: Interface
+
+A singleton type that reprents the interface of "taggable" Tensor Networks; i.e. tensors and indices can be indexed with
+`Tag`s. An alternative name could be `Indexable`, but "index" is too used and can lead to confusion.
+"""
 struct Taggable <: Interface end
 
 # keyword-dispatching methods

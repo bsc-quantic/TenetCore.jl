@@ -17,7 +17,13 @@ struct NotImplements <: InterfaceTrait end
 struct Implements <: InterfaceTrait end
 struct Delegates <: InterfaceTrait end
 
-implements(interface, x) = NotImplements()
+function implements(interface, x)
+    if delegates(interface, x) isa DelegateTo
+        return Delegates()
+    else
+        return NotImplements()
+    end
+end
 
 # NOTE for developers
 # try using functions owned by us (e.g. `mysize` instead of `Base.size`)
