@@ -55,9 +55,6 @@ end
 function handle!(tn::GenericTensorNetwork, @nospecialize(e::ReplaceEffect{<:Tag,<:Tag}))
     # notify the mixin that a tensor was deleted
     handle!(tn.tags, e)
-
-    # notify the tensor network that a tensor was deleted
-    handle!(tn.tn, e)
 end
 
 # derived methods

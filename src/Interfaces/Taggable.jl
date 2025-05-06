@@ -216,17 +216,17 @@ end
 
 ## `tag_inner!`
 tag_inner!(tn, x, tag) = tag_inner!(tn, x, tag, delegates(Taggable(), tn))
-tag_inner!(tn, x, tag, ::DelegateTo) = tag!(delegate(Taggable(), tn), x, tag)
+tag_inner!(tn, x, tag, ::DelegateTo) = tag_inner!(delegate(Taggable(), tn), x, tag)
 tag_inner!(tn, x, tag, ::DontDelegate) = throw(MethodError(tag_inner!, (tn, x, tag)))
 
 ## `untag_inner!`
 untag_inner!(tn, tag) = untag_inner!(tn, tag, delegates(Taggable(), tn))
-untag_inner!(tn, tag, ::DelegateTo) = untag!(delegate(Taggable(), tn), tag)
+untag_inner!(tn, tag, ::DelegateTo) = untag_inner!(delegate(Taggable(), tn), tag)
 untag_inner!(tn, tag, ::DontDelegate) = throw(MethodError(untag_inner!, (tn, tag)))
 
 ## `replace_tag_inner!`
 replace_tag_inner!(tn, old_tag, new_tag) = replace_tag_inner!(tn, old_tag, new_tag, delegates(Taggable(), tn))
-replace_tag_inner!(tn, old_tag, new_tag, ::DelegateTo) = replace_tag!(delegate(Taggable(), tn), old_tag, new_tag)
+replace_tag_inner!(tn, old_tag, new_tag, ::DelegateTo) = replace_tag_inner!(delegate(Taggable(), tn), old_tag, new_tag)
 
 function replace_tag_inner!(tn, old_tag::Site, new_tag::Site, ::DontDelegate)
     @debug "Falling back to the default `replace_tag_inner!` method"
