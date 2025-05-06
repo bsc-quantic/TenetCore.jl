@@ -1,0 +1,9 @@
+[deps]
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+GraphMakie = "1ecd5474-83a3-4783-bb4f-06765db800d2"
+NetworkLayout = "46757867-2c16-5918-afeb-47bfcb05e46a"
+Reactant = "3c362404-f566-11ee-1572-e11a4b42c853"
+TenetCore = "2cc23cfe-e55e-4940-9d06-ab16fa76dba6"
+
+[sources]
+TenetCore = {path = ".."}
