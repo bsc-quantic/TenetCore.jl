@@ -47,7 +47,7 @@ function Reactant.TracedUtils.push_val!(ad_inputs, x::TenetCore.AbstractTensorNe
     @assert length(path) == 2
     @assert path[2] === :data
 
-    x = parent(tensors(x)[path[1]]).mlir_data
+    x = parent(tensors(x)[path[1].tensor_id]).mlir_data
 
     return push!(ad_inputs, x)
 end
@@ -56,7 +56,7 @@ function Reactant.TracedUtils.set!(x::TenetCore.AbstractTensorNetwork, path, tos
     @assert length(path) == 2
     @assert path[2] === :data
 
-    x = parent(tensors(x)[path[1]])
+    x = parent(tensors(x)[path[1].tensor_id])
     x.mlir_data = tostore
 
     if emptypath
@@ -76,7 +76,7 @@ function Reactant.set_act!(
         inp.dval
     end
 
-    x = parent(tensors(x)[path[1]])
+    x = parent(tensors(x)[path[1].tensor_id])
     x.mlir_data = tostore
 
     if emptypath
