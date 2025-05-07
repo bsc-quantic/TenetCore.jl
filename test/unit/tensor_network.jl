@@ -198,6 +198,12 @@ function test_mock_tensor_network(tn)
             addtensor!(tn, new_tensor)
             @test hastensor(tn, new_tensor)
         end
+
+        # throw error on wrong size of existing index
+        @testset let tn = copy(tn)
+            new_tensor = Tensor(rand(2, 3), Index.([:m, :i]))
+            @test_throws ArgumentError addtensor!(tn, new_tensor)
+        end
     end
 
     @testset "rmtensor!" begin
@@ -297,7 +303,17 @@ function test_mock_tensor_network(tn)
         end
     end
 
-    @testset "Base.selectdim" begin end
+    @testset "Base.selectdim" begin
+        @testset let proj_tn = selectdim(tn, Index(:i), 1)
+            @test issetequal(all_inds(proj_tn), all_inds(tn))
+            @test size(proj_tn, Index(:i)) == 1
+            @test issetequal(
+                tensors(proj_tn; contain=[Index(:i)]),
+                map(x -> selectdim(x, Index(:i), 1:1), tensors(tn; contain=[Index(:i)])),
+            )
+        end
+    end
+
     @testset "Base.view" begin end
     @testset "Base.neighbors" begin end
     @testset "Base.push!" begin end
