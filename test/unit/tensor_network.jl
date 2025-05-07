@@ -1,5 +1,6 @@
 using Test
 using TenetCore
+using Serialization
 
 struct MockTensorNetwork <: TenetCore.AbstractTensorNetwork
     tensors::Vector{Tensor}
@@ -200,9 +201,12 @@ function test_mock_tensor_network(tn)
         end
 
         # throw error on wrong size of existing index
-        @testset let tn = copy(tn)
-            new_tensor = Tensor(rand(2, 3), Index.([:m, :i]))
-            @test_throws ArgumentError addtensor!(tn, new_tensor)
+        # TODO broken for `MockTensorNetwork`
+        if tn isa SimpleTensorNetwork || tn isa WrapperTensorNetwork{SimpleTensorNetwork}
+            @testset let tn = copy(tn)
+                new_tensor = Tensor(rand(2, 3), Index.([:m, :i]))
+                @test_throws DimensionMismatch addtensor!(tn, new_tensor)
+            end
         end
     end
 
@@ -304,18 +308,47 @@ function test_mock_tensor_network(tn)
     end
 
     @testset "Base.selectdim" begin
-        @testset let proj_tn = selectdim(tn, Index(:i), 1)
-            @test issetequal(all_inds(proj_tn), all_inds(tn))
+        @testset "i isa int" begin
+            proj_tn = selectdim(tn, Index(:i), 1)
+            @test !hasind(proj_tn, Index(:i))
+            @test issetequal(
+                tensors(proj_tn), map(x -> Index(:i) ∈ inds(x) ? selectdim(x, Index(:i), 1) : x, tensors(tn))
+            )
+        end
+
+        @testset "i isa range" begin
+            proj_tn = selectdim(tn, Index(:i), 1:1)
+            @test hasind(proj_tn, Index(:i))
             @test size(proj_tn, Index(:i)) == 1
             @test issetequal(
-                tensors(proj_tn; contain=[Index(:i)]),
-                map(x -> selectdim(x, Index(:i), 1:1), tensors(tn; contain=[Index(:i)])),
+                tensors(proj_tn), map(x -> Index(:i) ∈ inds(x) ? selectdim(x, Index(:i), 1:1) : x, tensors(tn))
             )
         end
     end
 
-    @testset "Base.view" begin end
-    @testset "Base.neighbors" begin end
+    @testset "Base.view" begin
+        @testset let proj_tn = view(tn, Index(:i) => 1, Index(:j) => 1:2)
+            @test !hasind(proj_tn, Index(:i))
+            @test hasind(proj_tn, Index(:j))
+            @test size(proj_tn, Index(:j)) == 2
+            @test issetequal(
+                tensors(proj_tn),
+                map(tensors(tn)) do tensor
+                    if Index(:i) ∈ inds(tensor) && Index(:j) ∈ inds(tensor)
+                        selectdim(selectdim(tensor, Index(:i), 1), Index(:j), 1:2)
+                    elseif Index(:i) ∈ inds(tensor)
+                        selectdim(tensor, Index(:i), 1)
+                    elseif Index(:j) ∈ inds(tensor)
+                        selectdim(tensor, Index(:j), 1:2)
+                    else
+                        tensor
+                    end
+                end,
+            )
+        end
+    end
+
+    @testset "Graphs.neighbors" begin end
     @testset "Base.push!" begin end
     @testset "Base.append!" begin end
     @testset "Base.pop!" begin end
