@@ -61,6 +61,8 @@ function Base.copy(tn::SimpleTensorNetwork)
 end
 
 # UnsafeScopeable implementation
+implements(::UnsafeScopeable, ::SimpleTensorNetwork) = Implements()
+
 get_unsafe_scope(tn::SimpleTensorNetwork) = tn.unsafe[]
 set_unsafe_scope!(tn::SimpleTensorNetwork, uc::Union{Nothing,UnsafeScope}) = tn.unsafe[] = uc
 
@@ -75,6 +77,8 @@ function checksizes(tn::SimpleTensorNetwork)
 end
 
 # TensorNetwork implementation
+implements(::TensorNetwork, ::SimpleTensorNetwork) = Implements()
+
 function all_tensors(tn::SimpleTensorNetwork)
     return get!(tn.sorted_tensors) do
         # TODO is okay to use `hash`? we sort to get a "stable" order

@@ -37,6 +37,8 @@ function handle!(mixin::TagMixin, e::ReplaceEffect{<:Index,<:Index})
 end
 
 # Taggable implementation
+implements(::Taggable, ::TagMixin) = Implements()
+
 all_sites(mixin::TagMixin) = collect(all_sites_iter(mixin))
 all_links(mixin::TagMixin) = collect(all_links_iter(mixin))
 

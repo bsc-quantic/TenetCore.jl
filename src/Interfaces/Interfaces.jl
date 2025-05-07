@@ -15,11 +15,10 @@ delegate(interface, x, ::DelegateTo{F}) where {F} = getproperty(x, F)
 abstract type InterfaceTrait end
 struct NotImplements <: InterfaceTrait end
 struct Implements <: InterfaceTrait end
-struct Delegates <: InterfaceTrait end
 
 function implements(interface, x)
     if delegates(interface, x) isa DelegateTo
-        return Delegates()
+        return implements(interface, delegate(interface, x))
     else
         return NotImplements()
     end
