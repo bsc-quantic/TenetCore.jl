@@ -51,7 +51,4 @@ include("Components/TagMixin.jl")
 include("Components/GenericTensorNetwork.jl")
 export GenericTensorNetwork
 
-# include("Components/TaggedTensorNetwork.jl")
-# export TaggedTensorNetwork
-
 end
