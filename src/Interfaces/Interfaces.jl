@@ -26,7 +26,7 @@ end
 
 # NOTE for developers
 # try using functions owned by us (e.g. `mysize` instead of `Base.size`)
-# aliases to `Base` come after and can be removed if problematic
+# aliases to `Base` are in "src/Operations/AbstractTensorNetwork.jl"
 
 include("Effects.jl")
 include("UnsafeScope.jl")
