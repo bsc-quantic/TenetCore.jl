@@ -69,8 +69,8 @@ tensors(kwargs::NamedTuple{(:contain,)}, tn) = tensors_contain_inds(tn, kwargs.c
 tensors(kwargs::NamedTuple{(:intersect,)}, tn) = tensors_intersect_inds(tn, kwargs.intersect)
 tensors(kwargs::NamedTuple{(:withinds,)}, tn) = tensors_with_inds(tn, kwargs.withinds)
 
-@deprecate tensors(kwargs::NamedTuple{(:contains,)}, tn) tensors(; contain=kwargs.contains, tn)
-@deprecate tensors(kwargs::NamedTuple{(:intersects,)}, tn) tensors(; intersect=kwargs.intersects, tn)
+@deprecate tensors(kwargs::NamedTuple{(:contains,)}, tn) tensors(tn; contain=kwargs.contains)
+@deprecate tensors(kwargs::NamedTuple{(:intersects,)}, tn) tensors(tn; intersect=kwargs.intersects)
 
 ### singular version of `tensors`
 tensor(tn; kwargs...) = tensor(sort_nt(values(kwargs)), tn)
