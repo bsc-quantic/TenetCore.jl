@@ -16,6 +16,7 @@ ValSplit = "0625e100-946b-11ec-09cd-6328dd093154"
 
 [weakdeps]
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
+FiniteDifferences = "26cc04aa-876d-5657-8c51-4c34ba976000"
 GraphMakie = "1ecd5474-83a3-4783-bb4f-06765db800d2"
 Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
@@ -23,6 +24,7 @@ Reactant = "3c362404-f566-11ee-1572-e11a4b42c853"
 
 [extensions]
 TenetCoreAdaptExt = ["Adapt"]
+TenetCoreFiniteDifferencesExt = ["FiniteDifferences"]
 TenetCoreGraphMakieExt = ["Makie", "Graphs", "GraphMakie"]
 TenetCoreGraphsExt = ["Graphs"]
 TenetCoreReactantExt = ["Reactant"]
@@ -32,6 +34,7 @@ Adapt = "4"
 ArgCheck = "2.5.0"
 BijectiveDicts = "0.2.1"
 EinExprs = "0.6.8"
+FiniteDifferences = "0.12"
 GraphMakie = "0.4, 0.5"
 Graphs = "1.12"
 LinearAlgebra = "1.10.0"
