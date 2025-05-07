@@ -71,12 +71,7 @@ test_inds_hyper = [Index(:j)]
 
 test_size = Dict(Index(:i) => 2, Index(:j) => 3, Index(:k) => 4)
 
-@testset "$(typeof(tn))" for tn in [
-    MockTensorNetwork(test_tensors),
-    SimpleTensorNetwork(test_tensors),
-    WrapperTensorNetwork(MockTensorNetwork(test_tensors)),
-    WrapperTensorNetwork(SimpleTensorNetwork(test_tensors)),
-]
+function test_mock_tensor_network(tn)
     @testset "all_tensors" begin
         @test issetequal(tensors(tn), test_tensors)
     end
@@ -321,4 +316,39 @@ test_size = Dict(Index(:i) => 2, Index(:j) => 3, Index(:k) => 4)
     @testset "contract" begin end
     @testset "resetinds!" begin end
     @testset "fuse!" begin end
+end
+
+@testset "MockTensorNetwork" begin
+    tn = MockTensorNetwork(test_tensors)
+    test_mock_tensor_network(tn)
+end
+
+@testset "SimpleTensorNetwork" begin
+    tn = SimpleTensorNetwork(test_tensors)
+
+    test_mock_tensor_network(tn)
+
+    @testset "Serialization" begin
+        # Serialize
+        buffer = IOBuffer()
+        serialize(buffer, tn)
+        seekstart(buffer)
+        content = read(buffer)
+
+        # Deserialize
+        read_buffer = IOBuffer(content)
+        tn2 = deserialize(read_buffer)
+
+        @test issetequal(all_tensors(tn2), all_tensors(tn))
+    end
+end
+
+@testset "WrapperTensorNetwork{MockTensorNetwork}" begin
+    tn = WrapperTensorNetwork(MockTensorNetwork(test_tensors))
+    test_mock_tensor_network(tn)
+end
+
+@testset "WrapperTensorNetwork{SimpleTensorNetwork}" begin
+    tn = WrapperTensorNetwork(SimpleTensorNetwork(test_tensors))
+    test_mock_tensor_network(tn)
 end
