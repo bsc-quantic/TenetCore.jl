@@ -171,7 +171,7 @@ end
 ## `tensors_contain_inds`
 tensors_contain_inds(tn, target) = tensors_contain_inds(tn, target, delegates(TensorNetwork(), tn))
 tensors_contain_inds(tn, target, ::DelegateTo) = tensors_contain_inds(delegate(TensorNetwork(), tn), target)
-tensors_contain_inds(tn, target, ::DontDelegate) = filter(⊇(target) ∘ inds, tensors(tn))
+tensors_contain_inds(tn, target, ::DontDelegate) = filter(Base.Fix2(⊇, target) ∘ inds, tensors(tn))
 tensors_contain_inds(tn, target::Index, ::DontDelegate) = tensors_contain_inds(tn, [target], DontDelegate())
 
 ## `tensors_intersect_inds`
