@@ -31,7 +31,7 @@ export inds, ind, hasind, ninds, all_inds, all_inds_iter, replace_ind!
 export tensors_with_inds, tensors_contain_inds, tensors_intersect_inds
 export inds_set, inds_parallel_to
 export size_inds, size_ind
-export arrays
+export arrays, contract
 
 # from Taggable
 export sites, site, hassite, nsites, all_sites, sites_like, site_like
