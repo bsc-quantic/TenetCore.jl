@@ -152,3 +152,12 @@ Represents the effect of unsetting a mapping of a `Plug` `Tag`.
 struct UnsetPlugEffect{T} <: Effect
     plug::T
 end
+
+"""
+    FuseEffect <: Effect
+
+Represents the effect of fusing indices in a Tensor Network.
+"""
+struct FuseEffect <: Effect
+    inds::Vector{Index}
+end

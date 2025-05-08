@@ -166,14 +166,28 @@ end
 Group indices parallel to `i` and reshape the tensors accordingly.
 """
 function fuse!(tn, i)
-    parinds = filter!(!=(i), inds(tn; parallelto=i))
+    parinds = inds(tn; parallelto=i)
     length(parinds) == 0 && return tn
 
-    # TODO replace ind for `Index(Fused(parinds))`?
     parinds = (i,) ∪ parinds
-    newtensors = map(Base.Fix2(fuse, parinds), pop!(tn, parinds))
+    checkeffect(tn, FuseEffect(parinds))
+    fuse_inner!(tn, parinds)
+    handle!(tn, FuseEffect(parinds))
 
-    append!(tn, newtensors)
+    return tn
+end
 
+fuse_inner!(tn, i) = fuse_inner!(tn, i, delegates(TensorNetwork(), tn))
+fuse_inner!(tn, i, ::DelegateTo) = fuse!(delegates(TensorNetwork(), tn), i)
+
+# TODO handle! in upper implementations
+# TODO replace ind for `Index(Fused(parinds))`?
+function fuse_inner!(tn, parinds, ::DontDelegate)
+    @debug "Fallback to default fuse_inner! for $(typeof(tn))"
+    @unsafe_region tn for tensor in tensors(tn; intersect=parinds)
+        # the way it is currently implemented, we must emit a `ReplaceEffect` because `Tensors` have changed
+        # TODO maybe refactor this when we stop using `Tensors` as graph vertices?
+        replace_tensor!(tn, tensor, Muscle.fuse(tensor, parinds))
+    end
     return tn
 end

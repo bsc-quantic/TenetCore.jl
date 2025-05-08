@@ -202,6 +202,10 @@ function tryprune!(tn::SimpleTensorNetwork, i::Index)
     return tn
 end
 
+function checkeffect(tn::SimpleTensorNetwork, e::FuseEffect)
+    @argcheck all(Base.Fix1(hasind, tn), e.inds)
+end
+
 # derived methods
 Base.:(==)(a::SimpleTensorNetwork, b::SimpleTensorNetwork) = all(splat(==), zip(tensors(a), tensors(b)))
 function Base.isapprox(a::SimpleTensorNetwork, b::SimpleTensorNetwork; kwargs...)
