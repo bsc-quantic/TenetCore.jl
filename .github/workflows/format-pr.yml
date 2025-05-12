@@ -10,7 +10,7 @@ jobs:
     strategy:
       matrix:
         branch:
-          - master
+          - main
 
     steps:
       - uses: julia-actions/setup-julia@v1
