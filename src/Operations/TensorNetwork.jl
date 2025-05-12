@@ -49,7 +49,7 @@ In-place projection of `index` on dimension `i`.
 See also: [`selectdim`](@ref), [`view`](@ref).
 """
 function slice!(tn, ind, i)
-    replacements = map(tensors(tn; contains=ind)) do tensor
+    replacements = map(tensors(tn; contain=ind)) do tensor
         tensor => selectdim(tensor, ind, i)
     end
 
@@ -116,7 +116,7 @@ end
 # Perform a gauge transformation on index `ind`.
 # """
 # function gauge!(tn, ind::Symbol, U::AbstractMatrix, Uinv::AbstractMatrix=inv(U))
-#     a, b = tensors(tn; contains=ind)
+#     a, b = tensors(tn; contain=ind)
 #     tmpind = gensym(ind)
 
 #     tU = Tensor(U, [ind, tmpind])
