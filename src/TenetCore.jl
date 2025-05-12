@@ -1,6 +1,7 @@
 module TenetCore
 
 using Reexport
+using Compat
 
 import EinExprs: inds
 
@@ -14,16 +15,18 @@ import EinExprs: inds
 
 include("Utils.jl")
 
-include("Interfaces/Interfaces.jl")
+import Networks: Interface
+import Networks: DelegatorTrait, DontDelegate, DelegateTo, delegator
+import Networks: ImplementorTrait, NotImplements, Implements
+import Networks: Effect, checkeffect, handle!
 
-include("Operations/TensorNetwork.jl")
-include("Operations/Pluggable.jl")
-include("Operations/AbstractTensorNetwork.jl")
-
-# from UnsafeScopeable
+# NOTE for developers
+# try using functions owned by us (e.g. `mysize` instead of `Base.size`)
+include("Interfaces/UnsafeScope.jl")
+@compat public UnsafeScopeable
 export @unsafe_region
 
-# from TensorNetwork
+include("Interfaces/TensorNetwork.jl")
 export TensorNetwork
 export tensors, tensor, hastensor, ntensors, all_tensors, all_tensors_iter, addtensor!, rmtensor!, replace_tensor!
 export inds, ind, hasind, ninds, all_inds, all_inds_iter, replace_ind!
@@ -32,20 +35,31 @@ export inds_set, inds_parallel_to
 export size_inds, size_ind
 export arrays, contract
 
-# from Taggable
+include("Interfaces/Taggable.jl")
+# include("Interfaces/Lattice.jl")
+@compat public Taggable
 export sites, site, hassite, nsites, all_sites, sites_like, site_like
 export links, link, haslink, nlinks, all_links, links_like, link_like
 export tensor_at, ind_at, site_at, link_at, size_link
 export tag!, untag!, replace_tag!
 
-# from Pluggable
+include("Interfaces/Pluggable.jl")
+@compat public Pluggable
 export plugs, plug, nplugs, hasplug, plugs_like, plug_like, ind_at_plug, plugs_like, plug_like, align!, @align!
+
+include("Interfaces/Attributeable.jl")
+
+# aliases to `Base` are in "src/Operations/AbstractTensorNetwork.jl"
+include("Operations/TensorNetwork.jl")
+include("Operations/Pluggable.jl")
+include("Operations/AbstractTensorNetwork.jl")
 
 # implementations
 include("Components/SimpleTensorNetwork.jl")
 export SimpleTensorNetwork
 
 include("Components/TagMixin.jl")
+@compat public TagMixin
 
 include("Components/GenericTensorNetwork.jl")
 export GenericTensorNetwork

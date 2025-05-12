@@ -21,12 +21,12 @@ end
 Base.copy(tn::GenericTensorNetwork) = GenericTensorNetwork(copy(tn.tn), copy(tn.tags))
 
 # delegation
-delegates(::UnsafeScopeable, ::GenericTensorNetwork) = DelegateTo{:tn}()
-delegates(::TensorNetwork, ::GenericTensorNetwork) = DelegateTo{:tn}()
-delegates(::Taggable, ::GenericTensorNetwork) = DelegateTo{:tags}()
+DelegatorTrait(::UnsafeScopeable, ::GenericTensorNetwork) = DelegateTo{:tn}()
+DelegatorTrait(::TensorNetwork, ::GenericTensorNetwork) = DelegateTo{:tn}()
+DelegatorTrait(::Taggable, ::GenericTensorNetwork) = DelegateTo{:tags}()
 
 # effects
-function handle!(tn::GenericTensorNetwork, @nospecialize(e::DeleteEffect{<:Tensor}))
+function handle!(tn::GenericTensorNetwork, @nospecialize(e::RemoveTensorEffect))
     # notify the mixin that a tensor was deleted
     handle!(tn.tags, e)
 

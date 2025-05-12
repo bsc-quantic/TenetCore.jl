@@ -141,7 +141,7 @@ function addtensor_inner!(tn::SimpleTensorNetwork, tensor::Tensor)
     return tn
 end
 
-handle!(::SimpleTensorNetwork, @nospecialize(e::PushEffect{<:Tensor})) = nothing
+handle!(::SimpleTensorNetwork, @nospecialize(e::AddTensorEffect)) = nothing
 
 function rmtensor_inner!(tn::SimpleTensorNetwork, tensor::Tensor)
     # do the actual delete
@@ -157,7 +157,7 @@ function rmtensor_inner!(tn::SimpleTensorNetwork, tensor::Tensor)
     return tn
 end
 
-handle!(::SimpleTensorNetwork, @nospecialize(e::DeleteEffect{<:Tensor})) = nothing
+handle!(::SimpleTensorNetwork, @nospecialize(e::RemoveTensorEffect)) = nothing
 
 function replace_tensor_inner!(tn::SimpleTensorNetwork, old_tensor, new_tensor)
     old_tensor === new_tensor && return tn

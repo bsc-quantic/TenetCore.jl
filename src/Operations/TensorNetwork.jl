@@ -177,8 +177,8 @@ function fuse!(tn, i)
     return tn
 end
 
-fuse_inner!(tn, i) = fuse_inner!(tn, i, delegates(TensorNetwork(), tn))
-fuse_inner!(tn, i, ::DelegateTo) = fuse!(delegates(TensorNetwork(), tn), i)
+fuse_inner!(tn, i) = fuse_inner!(tn, i, DelegatorTrait(TensorNetwork(), tn))
+fuse_inner!(tn, i, ::DelegateTo) = fuse!(DelegatorTrait(TensorNetwork(), tn), i)
 
 # TODO handle! in upper implementations
 # TODO replace ind for `Index(Fused(parinds))`?

@@ -54,6 +54,29 @@ function tag! end
 function untag! end
 function replace_tag! end
 
+# effects
+"""
+    TagEffect{Tag,Obj} <: Effect
+
+Represents the effect of setting a link or mapping between a `Tag` and an `Obj`ect.
+"""
+struct TagEffect{T,O} <: Effect
+    tag::T
+    obj::O
+end
+
+TagEffect(tag::T, @nospecialize(obj::Tensor)) where {T} = TagEffect{T,Tensor}(tag, obj)
+TagEffect(tag::T, @nospecialize(obj::Index)) where {T} = TagEffect{T,Index}(tag, obj)
+
+"""
+    UntagEffect{Tag,Obj} <: Effect
+
+Represents the effect of setting a link or mapping between a `Tag` and an `Obj`ect.
+"""
+struct UntagEffect{T} <: Effect
+    tag::T
+end
+
 # implementation
 tensor(kwargs::NamedTuple{(:at,)}, tn) = tensor_at(tn, kwargs.at)
 ind(kwargs::NamedTuple{(:at,)}, tn) = ind_at(tn, kwargs.at)
@@ -97,20 +120,20 @@ link(kwargs::NamedTuple{(:like)}, tn) = link(tn; by=isequal, kwargs...)
 link(kwargs::NamedTuple{(:by, :like)}, tn) = link_like(kwargs.by, tn, kwargs.like)
 
 ## `all_sites`
-all_sites(tn) = all_sites(tn, delegates(Taggable(), tn))
-all_sites(tn, ::DelegateTo) = all_sites(delegate(Taggable(), tn))
+all_sites(tn) = all_sites(tn, DelegatorTrait(Taggable(), tn))
+all_sites(tn, ::DelegateTo) = all_sites(delegator(Taggable(), tn))
 all_sites(tn, ::DontDelegate) = throw(MethodError(all_sites, (tn,)))
 
 ## `all_links`
-all_links(tn) = all_links(tn, delegates(Taggable(), tn))
-all_links(tn, ::DelegateTo) = all_links(delegate(Taggable(), tn))
+all_links(tn) = all_links(tn, DelegatorTrait(Taggable(), tn))
+all_links(tn, ::DelegateTo) = all_links(delegator(Taggable(), tn))
 all_links(tn, ::DontDelegate) = throw(MethodError(all_links, (tn,)))
 
 ## `all_sites_iter`
 ### helper method to avoid allocations on interation
 ### WARN it may mutate stuff
-all_sites_iter(tn) = all_sites_iter(tn, delegates(Taggable(), tn))
-all_sites_iter(tn, ::DelegateTo) = all_sites_iter(delegate(Taggable(), tn))
+all_sites_iter(tn) = all_sites_iter(tn, DelegatorTrait(Taggable(), tn))
+all_sites_iter(tn, ::DelegateTo) = all_sites_iter(delegator(Taggable(), tn))
 function all_sites_iter(tn, ::DontDelegate)
     @debug "Falling back to default `all_sites_iter` method"
     sites(tn)
@@ -119,21 +142,21 @@ end
 ## `all_links_iter`
 ### helper method to avoid allocations on interation
 ### WARN it may mutate stuff
-all_links_iter(tn) = all_links_iter(tn, delegates(Taggable(), tn))
-all_links_iter(tn, ::DelegateTo) = all_links_iter(delegate(Taggable(), tn))
+all_links_iter(tn) = all_links_iter(tn, DelegatorTrait(Taggable(), tn))
+all_links_iter(tn, ::DelegateTo) = all_links_iter(delegator(Taggable(), tn))
 all_links_iter(tn, ::DontDelegate) = links(tn)
 
 ## `hassite`
-hassite(tn, site) = hassite(tn, site, delegates(Taggable(), tn))
-hassite(tn, site, ::DelegateTo) = hassite(delegate(Taggable(), tn), site)
+hassite(tn, site) = hassite(tn, site, DelegatorTrait(Taggable(), tn))
+hassite(tn, site, ::DelegateTo) = hassite(delegator(Taggable(), tn), site)
 function hassite(tn, site, ::DontDelegate)
     @debug "Falling back to default `hassite` method"
     site ∈ all_sites(tn)
 end
 
 ## `haslink`
-haslink(tn, link) = haslink(tn, link, delegates(Taggable(), tn))
-haslink(tn, link, ::DelegateTo) = haslink(delegate(Taggable(), tn), link)
+haslink(tn, link) = haslink(tn, link, DelegatorTrait(Taggable(), tn))
+haslink(tn, link, ::DelegateTo) = haslink(delegator(Taggable(), tn), link)
 function haslink(tn, link, ::DontDelegate)
     @debug "Falling back to default `haslink` method"
     link ∈ all_links(tn)
@@ -141,8 +164,8 @@ end
 
 ## `nsites`
 nsites(tn; kwargs...) = nsites(sort_nt(values(kwargs)), tn)
-nsites(::@NamedTuple{}, tn) = nsites((;), tn, delegates(Taggable(), tn))
-nsites(::@NamedTuple{}, tn, ::DelegateTo) = nsites(delegate(Taggable(), tn))
+nsites(::@NamedTuple{}, tn) = nsites((;), tn, DelegatorTrait(Taggable(), tn))
+nsites(::@NamedTuple{}, tn, ::DelegateTo) = nsites(delegator(Taggable(), tn))
 
 function nsites(::@NamedTuple{}, tn, ::DontDelegate)
     @debug "Falling back to default `nsites` method"
@@ -156,8 +179,8 @@ end
 
 ## `nlinks`
 nlinks(tn; kwargs...) = nlinks(sort_nt(values(kwargs)), tn)
-nlinks(::@NamedTuple{}, tn) = nlinks((;), tn, delegates(Taggable(), tn))
-nlinks(::@NamedTuple{}, tn, ::DelegateTo) = nlinks(delegate(Taggable(), tn))
+nlinks(::@NamedTuple{}, tn) = nlinks((;), tn, DelegatorTrait(Taggable(), tn))
+nlinks(::@NamedTuple{}, tn, ::DelegateTo) = nlinks(delegator(Taggable(), tn))
 
 function nlinks(::@NamedTuple{}, tn, ::DontDelegate)
     @debug "Falling back to default `nlinks` method"
@@ -170,23 +193,23 @@ function nlinks(kwargs::NamedTuple, tn)
 end
 
 ## `tensor_at`
-tensor_at(tn, tag) = tensor_at(tn, tag, delegates(Taggable(), tn))
-tensor_at(tn, tag, ::DelegateTo) = tensor_at(delegate(Taggable(), tn), tag)
+tensor_at(tn, tag) = tensor_at(tn, tag, DelegatorTrait(Taggable(), tn))
+tensor_at(tn, tag, ::DelegateTo) = tensor_at(delegator(Taggable(), tn), tag)
 tensor_at(tn, tag, ::DontDelegate) = throw(MethodError(tensor_at, (tn, tag)))
 
 ## `ind_at`
-ind_at(tn, tag) = ind_at(tn, tag, delegates(Taggable(), tn))
-ind_at(tn, tag, ::DelegateTo) = ind_at(delegate(Taggable(), tn), tag)
+ind_at(tn, tag) = ind_at(tn, tag, DelegatorTrait(Taggable(), tn))
+ind_at(tn, tag, ::DelegateTo) = ind_at(delegator(Taggable(), tn), tag)
 ind_at(tn, tag, ::DontDelegate) = throw(MethodError(ind_at, (tn, tag)))
 
 ## `site_at`
-site_at(tn, x) = site_at(tn, x, delegates(Taggable(), tn))
-site_at(tn, x, ::DelegateTo) = site_at(delegate(Taggable(), tn), x)
+site_at(tn, x) = site_at(tn, x, DelegatorTrait(Taggable(), tn))
+site_at(tn, x, ::DelegateTo) = site_at(delegator(Taggable(), tn), x)
 site_at(tn, x, ::DontDelegate) = throw(MethodError(site_at, (tn, x)))
 
 ## `link_at`
-link_at(tn, x) = link_at(tn, x, delegates(Taggable(), tn))
-link_at(tn, x, ::DelegateTo) = link_at(delegate(Taggable(), tn), x)
+link_at(tn, x) = link_at(tn, x, DelegatorTrait(Taggable(), tn))
+link_at(tn, x, ::DelegateTo) = link_at(delegator(Taggable(), tn), x)
 link_at(tn, x, ::DontDelegate) = throw(MethodError(link_at, (tn, x)))
 
 ## `size_link`
@@ -215,18 +238,18 @@ function link_like(isequal_f, tn, ref_link)
 end
 
 ## `tag_inner!`
-tag_inner!(tn, x, tag) = tag_inner!(tn, x, tag, delegates(Taggable(), tn))
-tag_inner!(tn, x, tag, ::DelegateTo) = tag_inner!(delegate(Taggable(), tn), x, tag)
+tag_inner!(tn, x, tag) = tag_inner!(tn, x, tag, DelegatorTrait(Taggable(), tn))
+tag_inner!(tn, x, tag, ::DelegateTo) = tag_inner!(delegator(Taggable(), tn), x, tag)
 tag_inner!(tn, x, tag, ::DontDelegate) = throw(MethodError(tag_inner!, (tn, x, tag)))
 
 ## `untag_inner!`
-untag_inner!(tn, tag) = untag_inner!(tn, tag, delegates(Taggable(), tn))
-untag_inner!(tn, tag, ::DelegateTo) = untag_inner!(delegate(Taggable(), tn), tag)
+untag_inner!(tn, tag) = untag_inner!(tn, tag, DelegatorTrait(Taggable(), tn))
+untag_inner!(tn, tag, ::DelegateTo) = untag_inner!(delegator(Taggable(), tn), tag)
 untag_inner!(tn, tag, ::DontDelegate) = throw(MethodError(untag_inner!, (tn, tag)))
 
 ## `replace_tag_inner!`
-replace_tag_inner!(tn, old_tag, new_tag) = replace_tag_inner!(tn, old_tag, new_tag, delegates(Taggable(), tn))
-replace_tag_inner!(tn, old_tag, new_tag, ::DelegateTo) = replace_tag_inner!(delegate(Taggable(), tn), old_tag, new_tag)
+replace_tag_inner!(tn, old_tag, new_tag) = replace_tag_inner!(tn, old_tag, new_tag, DelegatorTrait(Taggable(), tn))
+replace_tag_inner!(tn, old_tag, new_tag, ::DelegateTo) = replace_tag_inner!(delegator(Taggable(), tn), old_tag, new_tag)
 
 function replace_tag_inner!(tn, old_tag::Site, new_tag::Site, ::DontDelegate)
     @debug "Falling back to the default `replace_tag_inner!` method"
@@ -260,8 +283,8 @@ function tag!(tn, x, tag)
     return tn
 end
 
-checkeffect(tn, @nospecialize(e::TagEffect)) = checkeffect(tn, e, delegates(Taggable(), tn))
-checkeffect(tn, @nospecialize(e::TagEffect), ::DelegateTo) = checkeffect(delegate(Taggable(), tn), e)
+checkeffect(tn, @nospecialize(e::TagEffect)) = checkeffect(tn, e, DelegatorTrait(Taggable(), tn))
+checkeffect(tn, @nospecialize(e::TagEffect), ::DelegateTo) = checkeffect(delegator(Taggable(), tn), e)
 
 function checkeffect(tn, @nospecialize(e::TagEffect{<:Site,<:Tensor}))
     hassite(tn, e.tag) && throw(ArgumentError("Tag $(e.tag) already exists in TensorNetwork"))
@@ -273,8 +296,8 @@ function checkeffect(tn, @nospecialize(e::TagEffect{<:Link,<:Index}))
     hasind(tn, e.obj) || throw(ArgumentError("Index not found in TensorNetwork"))
 end
 
-handle!(tn, @nospecialize(e::E)) where {E<:TagEffect} = handle!(tn, e, delegates(Taggable(), tn))
-handle!(tn, @nospecialize(e::E), ::DelegateTo) where {E<:TagEffect} = handle!(delegate(Taggable(), tn), e)
+handle!(tn, @nospecialize(e::E)) where {E<:TagEffect} = handle!(tn, e, DelegatorTrait(Taggable(), tn))
+handle!(tn, @nospecialize(e::E), ::DelegateTo) where {E<:TagEffect} = handle!(delegator(Taggable(), tn), e)
 handle!(tn, @nospecialize(e::E), ::DontDelegate) where {E<:TagEffect} = throw(MissingHandlerException(tn, e))
 
 ## `untag!`
@@ -285,8 +308,8 @@ function untag!(tn, tag)
     return tn
 end
 
-checkeffect(tn, @nospecialize(e::UntagEffect)) = checkeffect(tn, e, delegates(Taggable(), tn))
-checkeffect(tn, @nospecialize(e::UntagEffect), ::DelegateTo) = checkeffect(delegate(Taggable(), tn), e)
+checkeffect(tn, @nospecialize(e::UntagEffect)) = checkeffect(tn, e, DelegatorTrait(Taggable(), tn))
+checkeffect(tn, @nospecialize(e::UntagEffect), ::DelegateTo) = checkeffect(delegator(Taggable(), tn), e)
 
 function checkeffect(tn, @nospecialize(e::UntagEffect{<:Site}))
     hassite(tn, e.tag) || throw(ArgumentError("Site $(e.tag) not found in TensorNetwork"))
@@ -296,8 +319,8 @@ function checkeffect(tn, @nospecialize(e::UntagEffect{<:Link}))
     haslink(tn, e.tag) || throw(ArgumentError("Link $(e.tag) not found in TensorNetwork"))
 end
 
-handle!(tn, @nospecialize(e::E)) where {E<:UntagEffect} = handle!(tn, e, delegates(Taggable(), tn))
-handle!(tn, @nospecialize(e::E), ::DelegateTo) where {E<:UntagEffect} = handle!(delegate(Taggable(), tn), e)
+handle!(tn, @nospecialize(e::E)) where {E<:UntagEffect} = handle!(tn, e, DelegatorTrait(Taggable(), tn))
+handle!(tn, @nospecialize(e::E), ::DelegateTo) where {E<:UntagEffect} = handle!(delegator(Taggable(), tn), e)
 handle!(tn, @nospecialize(e::E), ::DontDelegate) where {E<:UntagEffect} = throw(MissingHandlerException(tn, e))
 
 ## `replace_tag!`
@@ -309,8 +332,8 @@ function replace_tag!(tn, old_tag, new_tag)
 end
 replace_tag!(tn, old_new::Pair) = replace_tag!(tn, old_new.first, old_new.second)
 
-checkeffect(tn, @nospecialize(e::ReplaceEffect)) = checkeffect(tn, e, delegates(Taggable(), tn))
-checkeffect(tn, @nospecialize(e::ReplaceEffect), ::DelegateTo) = checkeffect(delegate(Taggable(), tn), e)
+checkeffect(tn, @nospecialize(e::ReplaceEffect)) = checkeffect(tn, e, DelegatorTrait(Taggable(), tn))
+checkeffect(tn, @nospecialize(e::ReplaceEffect), ::DelegateTo) = checkeffect(delegator(Taggable(), tn), e)
 
 function checkeffect(tn, @nospecialize(e::ReplaceEffect{<:Site,<:Site}))
     old_tag = e.old
@@ -330,8 +353,6 @@ function checkeffect(tn, @nospecialize(e::ReplaceEffect{<:Link,<:Link}))
     haslink(tn, new_tag) && throw(ArgumentError("Link $(new_tag) already exists in TensorNetwork"))
 end
 
-handle!(tn, @nospecialize(e::ReplaceEffect{<:Tag,<:Tag})) = handle!(tn, e, delegates(Taggable(), tn))
-handle!(tn, @nospecialize(e::ReplaceEffect{<:Tag,<:Tag}), ::DelegateTo) = handle!(delegate(Taggable(), tn), e)
-function handle!(tn, @nospecialize(e::ReplaceEffect{<:Tag,<:Tag}), ::DontDelegate)
-    throw(MissingEffectHandlerException(tn, e))
-end
+handle!(tn, @nospecialize(e::ReplaceEffect{<:Tag,<:Tag})) = handle!(tn, e, DelegatorTrait(Taggable(), tn))
+handle!(tn, @nospecialize(e::ReplaceEffect{<:Tag,<:Tag}), ::DelegateTo) = handle!(delegator(Taggable(), tn), e)
+handle!(tn, @nospecialize(e::ReplaceEffect{<:Tag,<:Tag}), ::DontDelegate) = throw(MethodError(tn, e))

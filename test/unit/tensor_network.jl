@@ -36,7 +36,7 @@ function TenetCore.addtensor_inner!(tn::MockTensorNetwork, tensor::Tensor)
     return tn
 end
 
-TenetCore.handle!(::MockTensorNetwork, ::TenetCore.PushEffect{<:Tensor}) = nothing
+TenetCore.handle!(::MockTensorNetwork, ::TenetCore.AddTensorEffect) = nothing
 
 function TenetCore.rmtensor_inner!(tn::MockTensorNetwork, tensor::Tensor)
     if !hastensor(tn, tensor)
@@ -46,7 +46,7 @@ function TenetCore.rmtensor_inner!(tn::MockTensorNetwork, tensor::Tensor)
     return tn
 end
 
-TenetCore.handle!(::MockTensorNetwork, ::TenetCore.DeleteEffect{<:Tensor}) = nothing
+TenetCore.handle!(::MockTensorNetwork, ::TenetCore.RemoveTensorEffect) = nothing
 
 TenetCore.handle!(::MockTensorNetwork, ::TenetCore.ReplaceEffect{<:Tensor,<:Tensor}) = nothing
 TenetCore.handle!(::MockTensorNetwork, ::TenetCore.ReplaceEffect{<:Index,<:Index}) = nothing
@@ -56,8 +56,8 @@ struct WrapperTensorNetwork{T} <: TenetCore.AbstractTensorNetwork
 end
 
 Base.copy(tn::WrapperTensorNetwork) = WrapperTensorNetwork(copy(tn.tn))
-TenetCore.delegates(::TenetCore.UnsafeScopeable, ::WrapperTensorNetwork) = TenetCore.DelegateTo{:tn}()
-TenetCore.delegates(::TenetCore.TensorNetwork, ::WrapperTensorNetwork) = TenetCore.DelegateTo{:tn}()
+TenetCore.DelegatorTrait(::TenetCore.UnsafeScopeable, ::WrapperTensorNetwork) = TenetCore.DelegateTo{:tn}()
+TenetCore.DelegatorTrait(::TenetCore.TensorNetwork, ::WrapperTensorNetwork) = TenetCore.DelegateTo{:tn}()
 
 test_tensors = [
     Tensor(rand(ComplexF64, 2, 3), Index.([:i, :j])),

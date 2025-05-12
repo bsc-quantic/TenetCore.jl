@@ -12,7 +12,7 @@ Base.copy(mixin::TagMixin) = TagMixin(copy(mixin.linkmap), copy(mixin.sitemap))
 
 ## removing tensor breaks mapping
 ## TODO for index removal?
-function handle!(mixin::TagMixin, e::DeleteEffect{<:Tensor})
+function handle!(mixin::TagMixin, e::RemoveTensorEffect)
     if haskey(mixin.sitemap', e.f)
         site_tag = site_at(mixin, e.f)
         untag_inner!(mixin, site_tag)

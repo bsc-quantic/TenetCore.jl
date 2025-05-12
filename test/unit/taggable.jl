@@ -22,9 +22,9 @@ struct WrapperTaggableTensorNetwork{T} <: TenetCore.AbstractTensorNetwork
 end
 
 Base.copy(tn::WrapperTaggableTensorNetwork) = WrapperTaggableTensorNetwork(copy(tn.tn))
-TenetCore.delegates(::TenetCore.UnsafeScopeable, ::WrapperTaggableTensorNetwork) = TenetCore.DelegateTo{:tn}()
-TenetCore.delegates(::TenetCore.TensorNetwork, ::WrapperTaggableTensorNetwork) = TenetCore.DelegateTo{:tn}()
-TenetCore.delegates(::TenetCore.Taggable, ::WrapperTaggableTensorNetwork) = TenetCore.DelegateTo{:tn}()
+TenetCore.DelegatorTrait(::TenetCore.UnsafeScopeable, ::WrapperTaggableTensorNetwork) = TenetCore.DelegateTo{:tn}()
+TenetCore.DelegatorTrait(::TenetCore.TensorNetwork, ::WrapperTaggableTensorNetwork) = TenetCore.DelegateTo{:tn}()
+TenetCore.DelegatorTrait(::TenetCore.Taggable, ::WrapperTaggableTensorNetwork) = TenetCore.DelegateTo{:tn}()
 
 test_tensors = [
     Tensor(zeros(2, 2), [Index(:i), Index(:j)]),

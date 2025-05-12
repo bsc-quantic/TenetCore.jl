@@ -39,6 +39,37 @@ function inds_set_outputs end
 
 function adjoint_plugs! end
 
+# effects
+"""
+    SetPlugEffect{Tag,Obj} <: Effect
+
+Represents the effect of setting a mapping between a `Plug` `Tag` and an `Obj`ect.
+"""
+struct SetPlugEffect{T,O} <: Effect
+    plug::T
+    obj::O
+end
+
+SetPlugEffect(plug::T, @nospecialize(obj::Index)) where {T} = SetPlugEffect{T,Index}(plug, obj)
+
+"""
+    UnsetPlugEffect{Tag} <: Effect
+
+Represents the effect of unsetting a mapping of a `Plug` `Tag`.
+"""
+struct UnsetPlugEffect{T} <: Effect
+    plug::T
+end
+
+"""
+    FuseEffect <: Effect
+
+Represents the effect of fusing indices in a Tensor Network.
+"""
+struct FuseEffect <: Effect
+    inds::Vector{Index}
+end
+
 # implementation
 ## `plugs`
 # plugs(tn; kwargs...) = plugs(sort_nt(values(kwargs)), tn)
@@ -51,13 +82,13 @@ function adjoint_plugs! end
 # plug(::NamedTuple{(:like,)}, tn) = plug_like(tn, kwargs.like)
 
 ## `all_plugs`
-all_plugs(tn) = all_plugs(tn, delegates(Pluggable(), tn))
-all_plugs(tn, ::DelegateTo) = all_plugs(delegate(Pluggable(), tn))
+all_plugs(tn) = all_plugs(tn, DelegatorTrait(Pluggable(), tn))
+all_plugs(tn, ::DelegateTo) = all_plugs(delegator(Pluggable(), tn))
 all_plugs(tn, ::DontDelegate) = throw(MethodError(all_plugs, (tn,)))
 
 ## `all_plugs_iter`
-all_plugs_iter(tn) = all_plugs_iter(tn, delegates(Pluggable(), tn))
-all_plugs_iter(tn, ::DelegateTo) = all_plugs_iter(delegate(Pluggable(), tn))
+all_plugs_iter(tn) = all_plugs_iter(tn, DelegatorTrait(Pluggable(), tn))
+all_plugs_iter(tn, ::DelegateTo) = all_plugs_iter(delegator(Pluggable(), tn))
 function all_plugs_iter(tn, ::DontDelegate)
     @debug "Falling back to default implementation of `all_plugs_iter`"
     all_plugs(tn)

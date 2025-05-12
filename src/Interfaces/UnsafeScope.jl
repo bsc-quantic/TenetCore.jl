@@ -9,7 +9,7 @@ function checksizes end
 function inscope end
 
 function is_scopeable(tn::T) where {T}
-    if delegates(UnsafeScopeable(), tn) isa DelegateTo
+    if DelegatorTrait(UnsafeScopeable(), tn) isa DelegateTo
         true
         # elseif hasmethod(get_unsafe_scope, Tuple{T}) && hasmethod(set_unsafe_scope!, Tuple{T,UnsafeScope})
         #     true
@@ -18,16 +18,16 @@ function is_scopeable(tn::T) where {T}
     end
 end
 
-get_unsafe_scope(tn) = get_unsafe_scope(tn, delegates(UnsafeScopeable(), tn))
-get_unsafe_scope(tn, ::DelegateTo) = get_unsafe_scope(delegate(UnsafeScopeable(), tn))
+get_unsafe_scope(tn) = get_unsafe_scope(tn, DelegatorTrait(UnsafeScopeable(), tn))
+get_unsafe_scope(tn, ::DelegateTo) = get_unsafe_scope(delegator(UnsafeScopeable(), tn))
 get_unsafe_scope(_, ::DontDelegate) = nothing
 
-set_unsafe_scope!(tn, uc) = set_unsafe_scope!(tn, uc, delegates(UnsafeScopeable(), tn))
-set_unsafe_scope!(tn, uc, ::DelegateTo) = set_unsafe_scope!(delegate(UnsafeScopeable(), tn), uc)
+set_unsafe_scope!(tn, uc) = set_unsafe_scope!(tn, uc, DelegatorTrait(UnsafeScopeable(), tn))
+set_unsafe_scope!(tn, uc, ::DelegateTo) = set_unsafe_scope!(delegator(UnsafeScopeable(), tn), uc)
 set_unsafe_scope!(tn, uc, ::DontDelegate) = throw(MethodError(set_unsafe_scope!, (tn, uc)))
 
-checksizes(tn) = checksizes(tn, delegates(UnsafeScopeable(), tn))
-checksizes(tn, ::DelegateTo) = checksizes(delegate(UnsafeScopeable(), tn))
+checksizes(tn) = checksizes(tn, DelegatorTrait(UnsafeScopeable(), tn))
+checksizes(tn, ::DelegateTo) = checksizes(delegator(UnsafeScopeable(), tn))
 function checksizes(tn, ::DontDelegate)
     @debug "Falling back to default `checksizes` method"
     sizedict = size(tn)

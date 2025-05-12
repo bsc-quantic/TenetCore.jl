@@ -77,88 +77,88 @@ hasattr(tn, site::Site, key) = hasattr(tn, tensor_at(tn, site), key)
 hasattr(tn, link::Link, key) = hasattr(tn, ind_at(tn, link), key)
 
 ## `attrs_global`
-attrs_global(tn) = attrs_global(tn, delegates(Attributeable(), tn))
+attrs_global(tn) = attrs_global(tn, DelegatorTrait(Attributeable(), tn))
 attrs_global(tn, ::DelegateTo) = attrs_global(delagate(Attributeable(), tn))
 attrs_global(tn, ::DontDelegate) = throw(MethodError(attrs_global, (tn,)))
 
 ## `attrs_tensor`
-attrs_tensor(tn, tensor) = attrs_tensor(tn, tensor, delegates(Attributeable(), tn))
-attrs_tensor(tn, tensor, ::DelegateTo) = attrs_tensor(delegate(Attributeable(), tn), tensor)
+attrs_tensor(tn, tensor) = attrs_tensor(tn, tensor, DelegatorTrait(Attributeable(), tn))
+attrs_tensor(tn, tensor, ::DelegateTo) = attrs_tensor(delegator(Attributeable(), tn), tensor)
 attrs_tensor(tn, tensor, ::DontDelegate) = throw(MethodError(attrs_tensor, (tn, tensor)))
 
 ## `attrs_ind`
-attrs_ind(tn, ind) = attrs_ind(tn, ind, delegates(Attributeable(), tn))
-attrs_ind(tn, ind, ::DelegateTo) = attrs_ind(delegate(Attributeable(), tn), ind)
+attrs_ind(tn, ind) = attrs_ind(tn, ind, DelegatorTrait(Attributeable(), tn))
+attrs_ind(tn, ind, ::DelegateTo) = attrs_ind(delegator(Attributeable(), tn), ind)
 attrs_ind(tn, ind, ::DontDelegate) = throw(MethodError(attrs_ind, (tn, ind)))
 
 ## `getattr_global`
-getattr_global(tn, key) = getattr_global(tn, key, delegates(Attributeable(), tn))
-getattr_global(tn, key, ::DelegateTo) = getattr_global(delegate(Attributeable(), tn), key)
+getattr_global(tn, key) = getattr_global(tn, key, DelegatorTrait(Attributeable(), tn))
+getattr_global(tn, key, ::DelegateTo) = getattr_global(delegator(Attributeable(), tn), key)
 function getattr_global(tn, key, ::DontDelegate)
     @debug "Falling back to default implementation of `getattr_global`"
     return getindex(attrs_global(tn), key)
 end
 
 ## `getattr_tensor`
-getattr_tensor(tn, tensor, key) = getattr_tensor(tn, tensor, key, delegates(Attributeable(), tn))
-getattr_tensor(tn, tensor, key, ::DelegateTo) = getattr_tensor(delegate(Attributeable(), tn), tensor, key)
+getattr_tensor(tn, tensor, key) = getattr_tensor(tn, tensor, key, DelegatorTrait(Attributeable(), tn))
+getattr_tensor(tn, tensor, key, ::DelegateTo) = getattr_tensor(delegator(Attributeable(), tn), tensor, key)
 function getattr_tensor(tn, tensor, key, ::DontDelegate)
     @debug "Falling back to default implementation of `getattr_tensor`"
     return getindex(attrs_tensor(tn, tensor), key)
 end
 
 ## `getattr_ind`
-getattr_ind(tn, ind, key) = getattr_ind(tn, ind, key, delegates(Attributeable(), tn))
-getattr_ind(tn, ind, key, ::DelegateTo) = getattr_ind(delegate(Attributeable(), tn), ind, key)
+getattr_ind(tn, ind, key) = getattr_ind(tn, ind, key, DelegatorTrait(Attributeable(), tn))
+getattr_ind(tn, ind, key, ::DelegateTo) = getattr_ind(delegator(Attributeable(), tn), ind, key)
 function getattr_ind(tn, ind, key, ::DontDelegate)
     @debug "Falling back to default implementation of `getattr_ind`"
     return getindex(attrs_ind(tn, ind), key)
 end
 
 ## `hasattr_global`
-hasattr_global(tn, key) = hasattr_global(tn, key, delegates(Attributeable(), tn))
-hasattr_global(tn, key, ::DelegateTo) = hasattr_global(delegate(Attributeable(), tn), key)
+hasattr_global(tn, key) = hasattr_global(tn, key, DelegatorTrait(Attributeable(), tn))
+hasattr_global(tn, key, ::DelegateTo) = hasattr_global(delegator(Attributeable(), tn), key)
 function hasattr_global(tn, key, ::DontDelegate)
     @debug "Falling back to default implementation of `hasattr_global`"
     return haskey(attrs_global(tn), key)
 end
 
 ## `hasattr_tensor`
-hasattr_tensor(tn, tensor, key) = hasattr_tensor(tn, tensor, key, delegates(Attributeable(), tn))
-hasattr_tensor(tn, tensor, key, ::DelegateTo) = hasattr_tensor(delegate(Attributeable(), tn), tensor, key)
+hasattr_tensor(tn, tensor, key) = hasattr_tensor(tn, tensor, key, DelegatorTrait(Attributeable(), tn))
+hasattr_tensor(tn, tensor, key, ::DelegateTo) = hasattr_tensor(delegator(Attributeable(), tn), tensor, key)
 function hasattr_tensor(tn, tensor, key, ::DontDelegate)
     @debug "Falling back to default implementation of `hasattr_tensor`"
     return haskey(attrs_tensor(tn, tensor), key)
 end
 
 ## `hasattr_ind`
-hasattr_ind(tn, ind, key) = hasattr_ind(tn, ind, key, delegates(Attributeable(), tn))
-hasattr_ind(tn, ind, key, ::DelegateTo) = hasattr_ind(delegate(Attributeable(), tn), ind, key)
+hasattr_ind(tn, ind, key) = hasattr_ind(tn, ind, key, DelegatorTrait(Attributeable(), tn))
+hasattr_ind(tn, ind, key, ::DelegateTo) = hasattr_ind(delegator(Attributeable(), tn), ind, key)
 function hasattr_ind(tn, ind, key, ::DontDelegate)
     @debug "Falling back to default implementation of `hasattr_ind`"
     return haskey(attrs_ind(tn, ind), key)
 end
 
 ## `setattr_global_inner!`
-setattr_global_inner!(tn, key, value) = setattr_global_inner!(tn, key, value, delegates(Attributeable(), tn))
-setattr_global_inner!(tn, key, value, ::DelegateTo) = setattr_global_inner!(delegate(Attributeable(), tn), key, value)
+setattr_global_inner!(tn, key, value) = setattr_global_inner!(tn, key, value, DelegatorTrait(Attributeable(), tn))
+setattr_global_inner!(tn, key, value, ::DelegateTo) = setattr_global_inner!(delegator(Attributeable(), tn), key, value)
 setattr_global_inner!(tn, key, value, ::DontDelegate) = throw(MethodError(setattr_global_inner!, (tn, key, value)))
 
 ## `setattr_tensor_inner!`
 function setattr_tensor_inner!(tn, tensor, key, value)
-    setattr_tensor_inner!(tn, tensor, key, value, delegates(Attributeable(), tn))
+    setattr_tensor_inner!(tn, tensor, key, value, DelegatorTrait(Attributeable(), tn))
 end
 function setattr_tensor_inner!(tn, tensor, key, value, ::DelegateTo)
-    setattr_tensor_inner!(delegate(Attributeable(), tn), tensor, key, value)
+    setattr_tensor_inner!(delegator(Attributeable(), tn), tensor, key, value)
 end
 function setattr_tensor_inner!(tn, tensor, key, value, ::DontDelegate)
     throw(MethodError(setattr_tensor_inner!, (tn, tensor, key, value)))
 end
 
 ## `setattr_ind_inner!`
-setattr_ind_inner!(tn, ind, key, value) = setattr_ind_inner!(tn, ind, key, value, delegates(Attributeable(), tn))
+setattr_ind_inner!(tn, ind, key, value) = setattr_ind_inner!(tn, ind, key, value, DelegatorTrait(Attributeable(), tn))
 function setattr_ind_inner!(tn, ind, key, value, ::DelegateTo)
-    setattr_ind_inner!(delegate(Attributeable(), tn), ind, key, value)
+    setattr_ind_inner!(delegator(Attributeable(), tn), ind, key, value)
 end
 setattr_ind_inner!(tn, ind, key, value, ::DontDelegate) = throw(MethodError(setattr_ind_inner!, (tn, ind, key, value)))
 
@@ -175,12 +175,12 @@ function setattr_global!(tn, key, value)
     return tn
 end
 
-checkeffect(tn, e::SetAttrGlobal) = checkeffect(tn, e, delegates(Attributeable(), tn))
-checkeffect(tn, e::SetAttrGlobal, ::DelegateTo) = checkeffect(delegate(Attributeable(), tn), e)
+checkeffect(tn, e::SetAttrGlobal) = checkeffect(tn, e, DelegatorTrait(Attributeable(), tn))
+checkeffect(tn, e::SetAttrGlobal, ::DelegateTo) = checkeffect(delegator(Attributeable(), tn), e)
 checkeffect(tn, e::SetAttrGlobal, ::DontDelegate) = nothing
 
-handle!(tn, e::SetAttrGlobal) = handle!(tn, e, delegates(Attributeable(), tn))
-handle!(tn, e::SetAttrGlobal, ::DelegateTo) = handle!(delegate(Attributeable(), tn), e)
+handle!(tn, e::SetAttrGlobal) = handle!(tn, e, DelegatorTrait(Attributeable(), tn))
+handle!(tn, e::SetAttrGlobal, ::DelegateTo) = handle!(delegator(Attributeable(), tn), e)
 handle!(tn, e::SetAttrGlobal, ::DontDelegate) = nothing
 
 ## `setattr_tensor!`
@@ -197,14 +197,14 @@ function setattr_tensor!(tn, tensor, key, value)
     return tn
 end
 
-checkeffect(tn, e::SetAttrTensor) = checkeffect(tn, e, delegates(Attributeable(), tn))
-checkeffect(tn, e::SetAttrTensor, ::DelegateTo) = checkeffect(delegate(Attributeable(), tn), e)
+checkeffect(tn, e::SetAttrTensor) = checkeffect(tn, e, DelegatorTrait(Attributeable(), tn))
+checkeffect(tn, e::SetAttrTensor, ::DelegateTo) = checkeffect(delegator(Attributeable(), tn), e)
 function checkeffect(tn, e::SetAttrTensor, ::DontDelegate)
     hastensor(tn, e.tensor) || throw(ArgumentError("Tensor $(e.tensor) not in tensor network"))
 end
 
-handle!(tn, e::SetAttrTensor) = handle!(tn, e, delegates(Attributeable(), tn))
-handle!(tn, e::SetAttrTensor, ::DelegateTo) = handle!(delegate(Attributeable(), tn), e)
+handle!(tn, e::SetAttrTensor) = handle!(tn, e, DelegatorTrait(Attributeable(), tn))
+handle!(tn, e::SetAttrTensor, ::DelegateTo) = handle!(delegator(Attributeable(), tn), e)
 handle!(tn, e::SetAttrTensor, ::DontDelegate) = nothing
 
 ## `setattr_ind!`
@@ -221,12 +221,12 @@ function setattr_ind!(tn, ind, key, value)
     return tn
 end
 
-checkeffect(tn, e::SetAttrInd) = checkeffect(tn, e, delegates(Attributeable(), tn))
-checkeffect(tn, e::SetAttrInd, ::DelegateTo) = checkeffect(delegate(Attributeable(), tn), e)
+checkeffect(tn, e::SetAttrInd) = checkeffect(tn, e, DelegatorTrait(Attributeable(), tn))
+checkeffect(tn, e::SetAttrInd, ::DelegateTo) = checkeffect(delegator(Attributeable(), tn), e)
 function checkeffect(tn, e::SetAttrInd, ::DontDelegate)
     hasind(tn, e.ind) || throw(ArgumentError("Index $(e.ind) not in tensor network"))
 end
 
-handle!(tn, e::SetAttrInd) = handle!(tn, e, delegates(Attributeable(), tn))
-handle!(tn, e::SetAttrInd, ::DelegateTo) = handle!(delegate(Attributeable(), tn), e)
+handle!(tn, e::SetAttrInd) = handle!(tn, e, DelegatorTrait(Attributeable(), tn))
+handle!(tn, e::SetAttrInd, ::DelegateTo) = handle!(delegator(Attributeable(), tn), e)
 handle!(tn, e::SetAttrInd, ::DontDelegate) = nothing
