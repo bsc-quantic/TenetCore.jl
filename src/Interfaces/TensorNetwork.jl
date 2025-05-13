@@ -1,6 +1,7 @@
 using Base: AbstractVecOrTuple
 using ArgCheck
 using ValSplit
+using Networks
 using QuantumTags
 using EinExprs: EinExprs
 using Muscle: Muscle
@@ -10,6 +11,7 @@ using Muscle: Muscle
     TensorNetwork <: Interface
 
 A singleton type that represents the basic interface of a Tensor Network.
+A type implementing this interface should also implement the `Network` interface.
 """
 struct TensorNetwork <: Interface end
 
@@ -51,13 +53,34 @@ function addtensor_inner! end
 function rmtensor_inner! end
 function replace_tensor_inner! end
 function replace_ind_inner! end
+function slice_inner! end
+function fuse_inner! end
 
 function addtensor! end
 function rmtensor! end
 function replace_tensor! end
 function replace_ind! end
+function fuse! end
 
 # TODO contract!, split!
+
+"""
+    slice!(tn, index::Symbol, i)
+
+In-place projection of `index` on dimension `i`.
+
+See also: [`selectdim`](@ref), [`view`](@ref).
+"""
+function slice! end
+
+# extra: optional methods that could be other interfaces...
+## get vertex/edge from tensor/index
+function tensor_vertex end
+function index_edge end
+
+## get tensor/index from vertex/edge
+function vertex_tensor end
+function edge_index end
 
 # effects
 """
@@ -97,6 +120,16 @@ ReplaceEffect(old::Tensor, new::Tensor) = ReplaceEffect{Tensor,Tensor}(old, new)
 ReplaceEffect(old::Tensor, new::TN) where {TN} = ReplaceEffect{Tensor,TN}(old, new)
 ReplaceEffect(f::Pair) = ReplaceEffect(f.first, f.second)
 
+"""
+    SliceEffect{I,D} <: Effect
+
+Represents the effect of slicing an index on a dimension.
+"""
+struct SliceEffect{D} <: Effect
+    ind::Index
+    dim::D
+end
+
 # implementation
 ## `tensors`
 tensors(tn; kwargs...) = tensors(sort_nt(values(kwargs)), tn)
@@ -113,6 +146,7 @@ tensors(kwargs::NamedTuple{(:withinds,)}, tn) = tensors_with_inds(tn, kwargs.wit
 ### singular version of `tensors`
 tensor(tn; kwargs...) = tensor(sort_nt(values(kwargs)), tn)
 tensor(kwargs::NamedTuple, tn) = only(tensors(kwargs, tn))
+tensor(kwargs::@NamedTuple{vertex::V}, tn) where {V} = vertex_tensor(tn, kwargs.vertex)
 
 ## `inds`
 inds(tn; kwargs...) = inds(sort_nt(values(kwargs)), tn)
@@ -121,8 +155,10 @@ inds(kwargs::@NamedTuple{set::Symbol}, tn) = inds_set(tn, kwargs.set)
 inds(kwargs::NamedTuple{(:parallel_to,)}, tn) = inds_parallel_to(tn, kwargs.parallel_to)
 inds(kwargs::NamedTuple{(:parallelto,)}, tn) = inds_parallel_to(tn, kwargs.parallelto)
 
+### singular version of `inds`
 ind(tn; kwargs...) = ind(sort_nt(values(kwargs)), tn)
 ind(kwargs::NamedTuple, tn) = only(inds(kwargs, tn))
+ind(kwargs::@NamedTuple{edge::E}, tn) where {E} = edge_index(tn, kwargs.edge)
 
 ## `all_tensors`
 all_tensors(tn) = all_tensors(tn, DelegatorTrait(TensorNetwork(), tn))
@@ -152,6 +188,48 @@ function all_inds_iter(tn, ::DontDelegate)
     @debug "Falling back to default `all_inds_iter` method"
     all_inds(tn)
 end
+
+## `tensor_vertex`
+tensor_vertex(tn, tensor) = tensor_vertex(tn, tensor, DelegatorTrait(TensorNetwork(), tn))
+tensor_vertex(tn, tensor, ::DelegateTo) = tensor_vertex(delegator(TensorNetwork(), tn), tensor)
+function tensor_vertex(tn, tensor, ::DontDelegate)
+    @debug "Falling back to default `tensor_vertex` method"
+    @argcheck hastensor(tn, tensor) "tensor $tensor not found in the Tensor Network"
+    if vertex_type(tn) >: Tensor
+        return Vertex(tensor)
+    else
+        throw(MethodError(tensor_vertex, (tn, tensor)))
+    end
+end
+
+### helper method
+Networks.vertex(tn, tensor::Tensor) = tensor_vertex(tn, tensor)
+
+## `index_edge`
+index_edge(tn, index) = index_edge(tn, index, DelegatorTrait(TensorNetwork(), tn))
+index_edge(tn, index, ::DelegateTo) = index_edge(delegator(TensorNetwork(), tn), index)
+function index_edge(tn, index, ::DontDelegate)
+    @debug "Falling back to default `index_edge` method"
+    @argcheck hasind(tn, index) "index $index not found in the Tensor Network"
+    if edge_type(tn) >: Index
+        return Edge(index)
+    else
+        throw(MethodError(index_edge, (tn, index)))
+    end
+end
+
+### helper method
+Networks.edge(tn, index::Index) = index_edge(tn, index)
+
+## `vertex_tensor`
+vertex_tensor(tn, vertex) = vertex_tensor(tn, vertex, DelegatorTrait(TensorNetwork(), tn))
+vertex_tensor(tn, vertex, ::DelegateTo) = vertex_tensor(delegator(TensorNetwork(), tn), vertex)
+vertex_tensor(tn, vertex, ::DontDelegate) = throw(MethodError(vertex_tensor, (tn, vertex)))
+
+## `edge_index`
+edge_index(tn, edge) = edge_index(tn, edge, DelegatorTrait(TensorNetwork(), tn))
+edge_index(tn, edge, ::DelegateTo) = edge_index(delegator(TensorNetwork(), tn), edge)
+edge_index(tn, edge, ::DontDelegate) = throw(MethodError(edge_index, (tn, edge)))
 
 ## `hastensor`
 hastensor(tn, tensor) = hastensor(tn, tensor, DelegatorTrait(TensorNetwork(), tn))
@@ -290,61 +368,30 @@ function size_ind(tn, i, ::DontDelegate)
     return size(first(_tensors), i)
 end
 
-# mutating methods
+# `addtensor_inner!`
 addtensor_inner!(tn, tensor) = addtensor_inner!(tn, tensor, DelegatorTrait(TensorNetwork(), tn))
 addtensor_inner!(tn, tensor, ::DelegateTo) = addtensor!(delegator(TensorNetwork(), tn), tensor)
 addtensor_inner!(tn, tensor, ::DontDelegate) = throw(MethodError(addtensor_inner!, (tn, tensor)))
 
+## `rmtensor_inner!`
 rmtensor_inner!(tn, tensor) = rmtensor_inner!(tn, tensor, DelegatorTrait(TensorNetwork(), tn))
 rmtensor_inner!(tn, tensor, ::DelegateTo) = rmtensor!(delegator(TensorNetwork(), tn), tensor)
 rmtensor_inner!(tn, tensor, ::DontDelegate) = throw(MethodError(rmtensor_inner!, (tn, tensor)))
 
-function replace_tensor_inner!(tn, old_tensor, new_tensor)
-    replace_tensor_inner!(tn, old_tensor, new_tensor, DelegatorTrait(TensorNetwork(), tn))
-end
-function replace_tensor_inner!(tn, old_tensor, new_tensor, ::DelegateTo)
-    replace_tensor!(delegator(TensorNetwork(), tn), old_tensor, new_tensor)
-end
-function replace_tensor_inner!(tn, old_tensor, new_tensor, ::DontDelegate)
-    @debug "Falling back to the default `replace_tensor_inner!` method"
+## `replace_tensor_inner!`
+replace_tensor_inner!(tn, old, new) = replace_tensor_inner!(tn, old, new, DelegatorTrait(TensorNetwork(), tn))
+replace_tensor_inner!(tn, old, new, ::DelegateTo) = replace_tensor!(delegator(TensorNetwork(), tn), old, new)
+replace_tensor_inner!(tn, old, new, ::DontDelegate) = throw(MethodError(replace_tensor_inner!, (tn, old, new)))
 
-    old_tensor === new_tensor && return tn
-    hastensor(tn, old_tensor) || throw(ArgumentError("old tensor not found"))
-    hastensor(tn, new_tensor) && throw(ArgumentError("new tensor already exists"))
+## `replace_ind_inner!`
+replace_ind_inner!(tn, old, new) = replace_ind_inner!(tn, old, new, DelegatorTrait(TensorNetwork(), tn))
+replace_ind_inner!(tn, old, new, ::DelegateTo) = replace_ind!(delegator(TensorNetwork(), tn), old, new)
+replace_ind_inner!(tn, old, new, ::DontDelegate) = throw(MethodError(replace_ind_inner!, (tn, old, new)))
 
-    if !isscoped(tn)
-        @argcheck issetequal(inds(new_tensor), inds(old_tensor)) "replacing tensor indices don't match"
-    end
-
-    # TODO shouldn't we call `*_inner!` methods instead? their effects might have side effects
-    rmtensor!(tn, old_tensor)
-    addtensor!(tn, new_tensor)
-end
-
-replace_ind_inner!(tn, old_ind, new_ind) = replace_ind_inner!(tn, old_ind, new_ind, DelegatorTrait(TensorNetwork(), tn))
-function replace_ind_inner!(tn, old_ind, new_ind, ::DelegateTo)
-    replace_ind!(delegator(TensorNetwork(), tn), old_ind, new_ind)
-end
-function replace_ind_inner!(tn, old_ind, new_ind, ::DontDelegate)
-    @debug "Falling back to the default `replace_ind_inner!` method"
-
-    @argcheck hasind(tn, old_ind) "index $old_ind does not exist"
-    old_ind == new_ind && return tn
-    @argcheck !hasind(tn, new_ind) "index $new_ind is already present"
-
-    ############## legacy comment which might not be true anymore ##############
-    # NOTE `copy` because collection underneath is mutated
-    # for old_tensor in copy(tensors(tn; contain=old_ind))
-    # ...
-    # NOTE do not `delete!` before `push!` as indices can be lost due to `tryprune!`
-    # tryprune!(tn, old_ind) => `tryprune!` should be called on `handle!`
-    ############################################################################
-
-    @unsafe_region tn for old_tensor in tensors_contain_inds(tn, old_ind)
-        new_tensor = replace(old_tensor, old_ind => new_ind)
-        replace_tensor!(tn, old_tensor, new_tensor)
-    end
-end
+## `slice_inner!`
+slice_inner!(tn, ind, i) = slice_inner!(tn, ind, i, DelegatorTrait(TensorNetwork(), tn))
+slice_inner!(tn, ind, i, ::DelegateTo) = slice_inner!(delegator(TensorNetwork(), tn), ind, i)
+slice_inner!(tn, ind, i, ::DontDelegate) = throw(MethodError(slice_inner!, (tn, ind, i)))
 
 ## `addtensor!`
 function addtensor!(tn, tensor)
@@ -363,7 +410,7 @@ end
 
 handle!(tn, @nospecialize(e::AddTensorEffect)) = handle!(tn, e, DelegatorTrait(TensorNetwork(), tn))
 handle!(tn, @nospecialize(e::AddTensorEffect), ::DelegateTo) = handle!(delegator(TensorNetwork(), tn), e)
-handle!(tn, @nospecialize(e::AddTensorEffect), ::DontDelegate) = throw(MethodError(tn, e))
+handle!(_, @nospecialize(e::AddTensorEffect), ::DontDelegate) = nothing # throw(MethodError(handle!, (tn, e)))
 
 ## `rmtensor!`
 function rmtensor!(tn, tensor)
@@ -381,7 +428,7 @@ end
 
 handle!(tn, @nospecialize(e::RemoveTensorEffect)) = handle!(tn, e, DelegatorTrait(TensorNetwork(), tn))
 handle!(tn, @nospecialize(e::RemoveTensorEffect), ::DelegateTo) = handle!(delegator(TensorNetwork(), tn), e)
-handle!(tn, @nospecialize(e::RemoveTensorEffect), ::DontDelegate) = throw(MethodError(tn, e))
+handle!(_, @nospecialize(e::RemoveTensorEffect), ::DontDelegate) = nothing # throw(MethodError(handle!, (tn, e)))
 
 ## `replace_tensor!`
 function replace_tensor!(tn, old_tensor, new_tensor)
@@ -402,18 +449,16 @@ function checkeffect(tn, @nospecialize(e::ReplaceEffect{Told,Tnew}), ::DontDeleg
     hastensor(tn, e.old) || throw(ArgumentError("old tensor not found"))
     hastensor(tn, e.new) && throw(ArgumentError("new tensor already exists"))
 
-    if !isscoped(tn)
-        @argcheck issetequal(inds(e.new), inds(e.old)) "replacing tensor indices don't match"
-    end
+    # if !isscoped(tn)
+    @argcheck issetequal(inds(e.new), inds(e.old)) "replacing tensor indices don't match"
+    # end
 end
 
 handle!(tn, @nospecialize(e::ReplaceEffect{<:Tensor,<:Tensor})) = handle!(tn, e, DelegatorTrait(TensorNetwork(), tn))
 function handle!(tn, @nospecialize(e::ReplaceEffect{<:Tensor,<:Tensor}), ::DelegateTo)
     handle!(delegator(TensorNetwork(), tn), e)
 end
-function handle!(_, @nospecialize(e::ReplaceEffect{Told,Tnew}), ::DontDelegate) where {Told<:Tensor,Tnew<:Tensor}
-    throw(MethodError(tn, e))
-end
+handle!(_, @nospecialize(e::ReplaceEffect{Told,Tnew}), ::DontDelegate) where {Told<:Tensor,Tnew<:Tensor} = nothing # throw(MethodError(handle!, (tn, e)))
 
 ## `replace_ind!`
 function replace_ind!(tn, old_ind, new_ind)
@@ -431,12 +476,28 @@ function checkeffect(tn, @nospecialize(e::ReplaceEffect{<:Index,<:Index}), ::Del
     checkeffect(delegator(TensorNetwork(), tn), e)
 end
 function checkeffect(tn, @nospecialize(e::ReplaceEffect{Iold,Inew}), ::DontDelegate) where {Iold<:Index,Inew<:Index}
-    hasind(tn, e.old) || throw(ArgumentError("old index not found"))
-    hasind(tn, e.new) && throw(ArgumentError("new index already exists"))
+    hasind(tn, e.old) || throw(ArgumentError("old index ($(e.old)) not found"))
+    hasind(tn, e.new) && throw(ArgumentError("new index ($(e.new)) already exists"))
 end
 
 handle!(tn, @nospecialize(e::ReplaceEffect{<:Index,<:Index})) = handle!(tn, e, DelegatorTrait(TensorNetwork(), tn))
 handle!(tn, @nospecialize(e::ReplaceEffect{<:Index,<:Index}), ::DelegateTo) = handle!(delegator(TensorNetwork(), tn), e)
-function handle!(_, @nospecialize(e::ReplaceEffect{Iold,Inew}), ::DontDelegate) where {Iold<:Index,Inew<:Index}
-    throw(MethodError(tn, e))
+handle!(_, @nospecialize(e::ReplaceEffect{Iold,Inew}), ::DontDelegate) where {Iold<:Index,Inew<:Index} = nothing # throw(MethodError(handle!, (tn, e)))
+
+## `slice!`
+function slice!(tn, ind, i)
+    checkeffect(tn, SliceEffect(ind, i))
+    slice_inner!(tn, ind, i)
+    handle!(tn, SliceEffect(ind, i))
+    return tn
 end
+
+checkeffect(tn, @nospecialize(e::SliceEffect)) = checkeffect(tn, e, DelegatorTrait(TensorNetwork(), tn))
+checkeffect(tn, @nospecialize(e::SliceEffect), ::DelegateTo) = checkeffect(delegator(TensorNetwork(), tn), e)
+function checkeffect(tn, e::SliceEffect, ::DontDelegate)
+    hasind(tn, e.ind) || throw(ArgumentError("index ($(e.ind)) not found"))
+end
+
+handle!(tn, @nospecialize(e::SliceEffect)) = handle!(tn, e, DelegatorTrait(TensorNetwork(), tn))
+handle!(tn, @nospecialize(e::SliceEffect), ::DelegateTo) = handle!(delegator(TensorNetwork(), tn), e)
+handle!(_, e::SliceEffect, ::DontDelegate) = nothing # throw(MethodError(handle!, (tn, e)))

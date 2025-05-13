@@ -42,23 +42,6 @@ Return a list of the arrays of in the Tensor Network. It is equivalent to `paren
 arrays(tn; kwargs...) = parent.(tensors(tn; kwargs...))
 
 """
-    slice!(tn, index::Symbol, i)
-
-In-place projection of `index` on dimension `i`.
-
-See also: [`selectdim`](@ref), [`view`](@ref).
-"""
-function slice!(tn, ind, i)
-    replacements = map(tensors(tn; contain=ind)) do tensor
-        tensor => selectdim(tensor, ind, i)
-    end
-
-    @unsafe_region tn replace!(tn, replacements)
-
-    return tn
-end
-
-"""
     contract(tn; optimizer=Greedy(), path=einexpr(tn))
 
 Contract a Tensor Network. If `path` is not specified, the contraction order will be computed by [`einexpr`](@ref).

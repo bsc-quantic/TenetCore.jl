@@ -36,8 +36,6 @@ function TenetCore.addtensor_inner!(tn::MockTensorNetwork, tensor::Tensor)
     return tn
 end
 
-TenetCore.handle!(::MockTensorNetwork, ::TenetCore.AddTensorEffect) = nothing
-
 function TenetCore.rmtensor_inner!(tn::MockTensorNetwork, tensor::Tensor)
     if !hastensor(tn, tensor)
         throw(ArgumentError("tensor not found in the network"))
@@ -46,10 +44,29 @@ function TenetCore.rmtensor_inner!(tn::MockTensorNetwork, tensor::Tensor)
     return tn
 end
 
-TenetCore.handle!(::MockTensorNetwork, ::TenetCore.RemoveTensorEffect) = nothing
+function TenetCore.replace_tensor_inner!(tn::MockTensorNetwork, old_tensor, new_tensor)
+    old_tensor === new_tensor && return tn
 
-TenetCore.handle!(::MockTensorNetwork, ::TenetCore.ReplaceEffect{<:Tensor,<:Tensor}) = nothing
-TenetCore.handle!(::MockTensorNetwork, ::TenetCore.ReplaceEffect{<:Index,<:Index}) = nothing
+    TenetCore.rmtensor_inner!(tn, old_tensor)
+    TenetCore.addtensor_inner!(tn, new_tensor)
+end
+
+function TenetCore.replace_ind_inner!(tn::MockTensorNetwork, old_ind, new_ind)
+    old_ind == new_ind && return tn
+
+    for old_tensor in tensors_contain_inds(tn, old_ind)
+        new_tensor = replace(old_tensor, old_ind => new_ind)
+        TenetCore.replace_tensor_inner!(tn, old_tensor, new_tensor)
+    end
+end
+
+function TenetCore.slice_inner!(tn::MockTensorNetwork, ind, i)
+    for old_tensor in tensors(tn; contain=ind)
+        new_tensor = selectdim(old_tensor, ind, i)
+        TenetCore.replace_tensor_inner!(tn, old_tensor, new_tensor)
+    end
+    return tn
+end
 
 struct WrapperTensorNetwork{T} <: TenetCore.AbstractTensorNetwork
     tn::T
@@ -228,18 +245,19 @@ function test_mock_tensor_network(tn)
         end
 
         # replacement with index change
-        @testset let tn = copy(tn)
-            tensor_to_replace = test_tensors[1]
-            new_tensor = Tensor(rand(2, 3), Index.([:m, :j]))
+        # WARN no longer allowed by default
+        # @testset let tn = copy(tn)
+        #     tensor_to_replace = test_tensors[1]
+        #     new_tensor = Tensor(rand(2, 3), Index.([:m, :j]))
 
-            # not allowed by default
-            @test_throws ArgumentError replace_tensor!(tn, tensor_to_replace, new_tensor)
+        #     # not allowed by default
+        #     @test_throws ArgumentError replace_tensor!(tn, tensor_to_replace, new_tensor)
 
-            # but allowed if inside an unsafe scope
-            @unsafe_region tn replace_tensor!(tn, tensor_to_replace, new_tensor)
-            @test hastensor(tn, new_tensor)
-            @test !hastensor(tn, tensor_to_replace)
-        end
+        #     # but allowed if inside an unsafe scope
+        #     @unsafe_region tn replace_tensor!(tn, tensor_to_replace, new_tensor)
+        #     @test hastensor(tn, new_tensor)
+        #     @test !hastensor(tn, tensor_to_replace)
+        # end
     end
 
     @testset "replace_ind!" begin
@@ -348,7 +366,6 @@ function test_mock_tensor_network(tn)
         end
     end
 
-    @testset "Graphs.neighbors" begin end
     @testset "Base.push!" begin end
     @testset "Base.append!" begin end
     @testset "Base.pop!" begin end

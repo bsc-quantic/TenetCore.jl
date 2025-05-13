@@ -355,4 +355,4 @@ end
 
 handle!(tn, @nospecialize(e::ReplaceEffect{<:Tag,<:Tag})) = handle!(tn, e, DelegatorTrait(Taggable(), tn))
 handle!(tn, @nospecialize(e::ReplaceEffect{<:Tag,<:Tag}), ::DelegateTo) = handle!(delegator(Taggable(), tn), e)
-handle!(tn, @nospecialize(e::ReplaceEffect{<:Tag,<:Tag}), ::DontDelegate) = throw(MethodError(tn, e))
+handle!(tn, @nospecialize(e::ReplaceEffect{<:Tag,<:Tag}), ::DontDelegate) = throw(MethodError(handle!, (tn, e)))
