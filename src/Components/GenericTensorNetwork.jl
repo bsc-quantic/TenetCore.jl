@@ -21,6 +21,7 @@ end
 Base.copy(tn::GenericTensorNetwork) = GenericTensorNetwork(copy(tn.tn), copy(tn.tags))
 
 # delegation
+DelegatorTrait(::Network, ::GenericTensorNetwork) = DelegateTo{:tn}()
 DelegatorTrait(::UnsafeScopeable, ::GenericTensorNetwork) = DelegateTo{:tn}()
 DelegatorTrait(::TensorNetwork, ::GenericTensorNetwork) = DelegateTo{:tn}()
 DelegatorTrait(::Taggable, ::GenericTensorNetwork) = DelegateTo{:tags}()
