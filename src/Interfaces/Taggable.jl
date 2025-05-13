@@ -46,13 +46,14 @@ function links_like end
 function link_like end
 
 # mutating methods
-function tag_inner! end
-function untag_inner! end
-function replace_tag_inner! end
-
 function tag! end
+function tag_inner! end
+
 function untag! end
+function untag_inner! end
+
 function replace_tag! end
+function replace_tag_inner! end
 
 # effects
 """
@@ -237,44 +238,6 @@ function link_like(isequal_f, tn, ref_link)
     first(links_like(isequal_f, tn, ref_link))
 end
 
-## `tag_inner!`
-tag_inner!(tn, x, tag) = tag_inner!(tn, x, tag, DelegatorTrait(Taggable(), tn))
-tag_inner!(tn, x, tag, ::DelegateTo) = tag_inner!(delegator(Taggable(), tn), x, tag)
-tag_inner!(tn, x, tag, ::DontDelegate) = throw(MethodError(tag_inner!, (tn, x, tag)))
-
-## `untag_inner!`
-untag_inner!(tn, tag) = untag_inner!(tn, tag, DelegatorTrait(Taggable(), tn))
-untag_inner!(tn, tag, ::DelegateTo) = untag_inner!(delegator(Taggable(), tn), tag)
-untag_inner!(tn, tag, ::DontDelegate) = throw(MethodError(untag_inner!, (tn, tag)))
-
-## `replace_tag_inner!`
-replace_tag_inner!(tn, old_tag, new_tag) = replace_tag_inner!(tn, old_tag, new_tag, DelegatorTrait(Taggable(), tn))
-replace_tag_inner!(tn, old_tag, new_tag, ::DelegateTo) = replace_tag_inner!(delegator(Taggable(), tn), old_tag, new_tag)
-
-function replace_tag_inner!(tn, old_tag::Site, new_tag::Site, ::DontDelegate)
-    @debug "Falling back to the default `replace_tag_inner!` method"
-
-    old_tag == new_tag && return tn
-    hassite(tn, old_tag) || throw(ArgumentError("old tag not found"))
-    hassite(tn, new_tag) && throw(ArgumentError("new tag already exists"))
-
-    tensor = tensor_at(tn, old_tag)
-    untag_inner!(tn, old_tag)
-    tag_inner!(tn, tensor, new_tag)
-end
-
-function replace_tag_inner!(tn, old_tag::Link, new_tag::Link, ::DontDelegate)
-    @debug "Falling back to the default `replace_tag_inner!` method"
-
-    old_tag == new_tag && return tn
-    haslink(tn, old_tag) || throw(ArgumentError("old tag not found"))
-    haslink(tn, new_tag) && throw(ArgumentError("new tag already exists"))
-
-    ind = ind_at(tn, old_tag)
-    untag_inner!(tn, old_tag)
-    tag_inner!(tn, ind, new_tag)
-end
-
 ## `tag!`
 function tag!(tn, x, tag)
     checkeffect(tn, TagEffect(tag, x))
@@ -298,7 +261,12 @@ end
 
 handle!(tn, @nospecialize(e::E)) where {E<:TagEffect} = handle!(tn, e, DelegatorTrait(Taggable(), tn))
 handle!(tn, @nospecialize(e::E), ::DelegateTo) where {E<:TagEffect} = handle!(delegator(Taggable(), tn), e)
-handle!(tn, @nospecialize(e::E), ::DontDelegate) where {E<:TagEffect} = throw(MissingHandlerException(tn, e))
+handle!(tn, @nospecialize(e::E), ::DontDelegate) where {E<:TagEffect} = nothing
+
+## `tag_inner!`
+tag_inner!(tn, x, tag) = tag_inner!(tn, x, tag, DelegatorTrait(Taggable(), tn))
+tag_inner!(tn, x, tag, ::DelegateTo) = tag_inner!(delegator(Taggable(), tn), x, tag)
+tag_inner!(tn, x, tag, ::DontDelegate) = throw(MethodError(tag_inner!, (tn, x, tag)))
 
 ## `untag!`
 function untag!(tn, tag)
@@ -321,7 +289,12 @@ end
 
 handle!(tn, @nospecialize(e::E)) where {E<:UntagEffect} = handle!(tn, e, DelegatorTrait(Taggable(), tn))
 handle!(tn, @nospecialize(e::E), ::DelegateTo) where {E<:UntagEffect} = handle!(delegator(Taggable(), tn), e)
-handle!(tn, @nospecialize(e::E), ::DontDelegate) where {E<:UntagEffect} = throw(MissingHandlerException(tn, e))
+handle!(tn, @nospecialize(e::E), ::DontDelegate) where {E<:UntagEffect} = nothing
+
+## `untag_inner!`
+untag_inner!(tn, tag) = untag_inner!(tn, tag, DelegatorTrait(Taggable(), tn))
+untag_inner!(tn, tag, ::DelegateTo) = untag_inner!(delegator(Taggable(), tn), tag)
+untag_inner!(tn, tag, ::DontDelegate) = throw(MethodError(untag_inner!, (tn, tag)))
 
 ## `replace_tag!`
 function replace_tag!(tn, old_tag, new_tag)
@@ -355,4 +328,32 @@ end
 
 handle!(tn, @nospecialize(e::ReplaceEffect{<:Tag,<:Tag})) = handle!(tn, e, DelegatorTrait(Taggable(), tn))
 handle!(tn, @nospecialize(e::ReplaceEffect{<:Tag,<:Tag}), ::DelegateTo) = handle!(delegator(Taggable(), tn), e)
-handle!(tn, @nospecialize(e::ReplaceEffect{<:Tag,<:Tag}), ::DontDelegate) = throw(MethodError(handle!, (tn, e)))
+handle!(tn, @nospecialize(e::ReplaceEffect{<:Tag,<:Tag}), ::DontDelegate) = nothing
+
+## `replace_tag_inner!`
+replace_tag_inner!(tn, old_tag, new_tag) = replace_tag_inner!(tn, old_tag, new_tag, DelegatorTrait(Taggable(), tn))
+replace_tag_inner!(tn, old_tag, new_tag, ::DelegateTo) = replace_tag_inner!(delegator(Taggable(), tn), old_tag, new_tag)
+
+function replace_tag_inner!(tn, old_tag::Site, new_tag::Site, ::DontDelegate)
+    @debug "Falling back to the default `replace_tag_inner!` method"
+
+    old_tag == new_tag && return tn
+    hassite(tn, old_tag) || throw(ArgumentError("old tag not found"))
+    hassite(tn, new_tag) && throw(ArgumentError("new tag already exists"))
+
+    tensor = tensor_at(tn, old_tag)
+    untag_inner!(tn, old_tag)
+    tag_inner!(tn, tensor, new_tag)
+end
+
+function replace_tag_inner!(tn, old_tag::Link, new_tag::Link, ::DontDelegate)
+    @debug "Falling back to the default `replace_tag_inner!` method"
+
+    old_tag == new_tag && return tn
+    haslink(tn, old_tag) || throw(ArgumentError("old tag not found"))
+    haslink(tn, new_tag) && throw(ArgumentError("new tag already exists"))
+
+    ind = ind_at(tn, old_tag)
+    untag_inner!(tn, old_tag)
+    tag_inner!(tn, ind, new_tag)
+end

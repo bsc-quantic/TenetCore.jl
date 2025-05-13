@@ -49,20 +49,17 @@ function inds_set end
 function inds_parallel_to end
 
 # mutating methods
-function addtensor_inner! end
-function rmtensor_inner! end
-function replace_tensor_inner! end
-function replace_ind_inner! end
-function slice_inner! end
-function fuse_inner! end
-
 function addtensor! end
-function rmtensor! end
-function replace_tensor! end
-function replace_ind! end
-function fuse! end
+function addtensor_inner! end
 
-# TODO contract!, split!
+function rmtensor! end
+function rmtensor_inner! end
+
+function replace_tensor! end
+function replace_tensor_inner! end
+
+function replace_ind! end
+function replace_ind_inner! end
 
 """
     slice!(tn, index::Symbol, i)
@@ -72,6 +69,12 @@ In-place projection of `index` on dimension `i`.
 See also: [`selectdim`](@ref), [`view`](@ref).
 """
 function slice! end
+function slice_inner! end
+
+function fuse! end
+function fuse_inner! end
+
+# TODO contract!, split!
 
 # extra: optional methods that could be other interfaces...
 ## get vertex/edge from tensor/index
@@ -368,31 +371,6 @@ function size_ind(tn, i, ::DontDelegate)
     return size(first(_tensors), i)
 end
 
-# `addtensor_inner!`
-addtensor_inner!(tn, tensor) = addtensor_inner!(tn, tensor, DelegatorTrait(TensorNetwork(), tn))
-addtensor_inner!(tn, tensor, ::DelegateTo) = addtensor!(delegator(TensorNetwork(), tn), tensor)
-addtensor_inner!(tn, tensor, ::DontDelegate) = throw(MethodError(addtensor_inner!, (tn, tensor)))
-
-## `rmtensor_inner!`
-rmtensor_inner!(tn, tensor) = rmtensor_inner!(tn, tensor, DelegatorTrait(TensorNetwork(), tn))
-rmtensor_inner!(tn, tensor, ::DelegateTo) = rmtensor!(delegator(TensorNetwork(), tn), tensor)
-rmtensor_inner!(tn, tensor, ::DontDelegate) = throw(MethodError(rmtensor_inner!, (tn, tensor)))
-
-## `replace_tensor_inner!`
-replace_tensor_inner!(tn, old, new) = replace_tensor_inner!(tn, old, new, DelegatorTrait(TensorNetwork(), tn))
-replace_tensor_inner!(tn, old, new, ::DelegateTo) = replace_tensor!(delegator(TensorNetwork(), tn), old, new)
-replace_tensor_inner!(tn, old, new, ::DontDelegate) = throw(MethodError(replace_tensor_inner!, (tn, old, new)))
-
-## `replace_ind_inner!`
-replace_ind_inner!(tn, old, new) = replace_ind_inner!(tn, old, new, DelegatorTrait(TensorNetwork(), tn))
-replace_ind_inner!(tn, old, new, ::DelegateTo) = replace_ind!(delegator(TensorNetwork(), tn), old, new)
-replace_ind_inner!(tn, old, new, ::DontDelegate) = throw(MethodError(replace_ind_inner!, (tn, old, new)))
-
-## `slice_inner!`
-slice_inner!(tn, ind, i) = slice_inner!(tn, ind, i, DelegatorTrait(TensorNetwork(), tn))
-slice_inner!(tn, ind, i, ::DelegateTo) = slice_inner!(delegator(TensorNetwork(), tn), ind, i)
-slice_inner!(tn, ind, i, ::DontDelegate) = throw(MethodError(slice_inner!, (tn, ind, i)))
-
 ## `addtensor!`
 function addtensor!(tn, tensor)
     checkeffect(tn, AddTensorEffect(tensor))
@@ -412,6 +390,11 @@ handle!(tn, @nospecialize(e::AddTensorEffect)) = handle!(tn, e, DelegatorTrait(T
 handle!(tn, @nospecialize(e::AddTensorEffect), ::DelegateTo) = handle!(delegator(TensorNetwork(), tn), e)
 handle!(_, @nospecialize(e::AddTensorEffect), ::DontDelegate) = nothing # throw(MethodError(handle!, (tn, e)))
 
+# `addtensor_inner!`
+addtensor_inner!(tn, tensor) = addtensor_inner!(tn, tensor, DelegatorTrait(TensorNetwork(), tn))
+addtensor_inner!(tn, tensor, ::DelegateTo) = addtensor!(delegator(TensorNetwork(), tn), tensor)
+addtensor_inner!(tn, tensor, ::DontDelegate) = throw(MethodError(addtensor_inner!, (tn, tensor)))
+
 ## `rmtensor!`
 function rmtensor!(tn, tensor)
     checkeffect(tn, RemoveTensorEffect(tensor))
@@ -429,6 +412,11 @@ end
 handle!(tn, @nospecialize(e::RemoveTensorEffect)) = handle!(tn, e, DelegatorTrait(TensorNetwork(), tn))
 handle!(tn, @nospecialize(e::RemoveTensorEffect), ::DelegateTo) = handle!(delegator(TensorNetwork(), tn), e)
 handle!(_, @nospecialize(e::RemoveTensorEffect), ::DontDelegate) = nothing # throw(MethodError(handle!, (tn, e)))
+
+## `rmtensor_inner!`
+rmtensor_inner!(tn, tensor) = rmtensor_inner!(tn, tensor, DelegatorTrait(TensorNetwork(), tn))
+rmtensor_inner!(tn, tensor, ::DelegateTo) = rmtensor!(delegator(TensorNetwork(), tn), tensor)
+rmtensor_inner!(tn, tensor, ::DontDelegate) = throw(MethodError(rmtensor_inner!, (tn, tensor)))
 
 ## `replace_tensor!`
 function replace_tensor!(tn, old_tensor, new_tensor)
@@ -460,6 +448,11 @@ function handle!(tn, @nospecialize(e::ReplaceEffect{<:Tensor,<:Tensor}), ::Deleg
 end
 handle!(_, @nospecialize(e::ReplaceEffect{Told,Tnew}), ::DontDelegate) where {Told<:Tensor,Tnew<:Tensor} = nothing # throw(MethodError(handle!, (tn, e)))
 
+## `replace_tensor_inner!`
+replace_tensor_inner!(tn, old, new) = replace_tensor_inner!(tn, old, new, DelegatorTrait(TensorNetwork(), tn))
+replace_tensor_inner!(tn, old, new, ::DelegateTo) = replace_tensor!(delegator(TensorNetwork(), tn), old, new)
+replace_tensor_inner!(tn, old, new, ::DontDelegate) = throw(MethodError(replace_tensor_inner!, (tn, old, new)))
+
 ## `replace_ind!`
 function replace_ind!(tn, old_ind, new_ind)
     checkeffect(tn, ReplaceEffect(old_ind, new_ind))
@@ -484,6 +477,11 @@ handle!(tn, @nospecialize(e::ReplaceEffect{<:Index,<:Index})) = handle!(tn, e, D
 handle!(tn, @nospecialize(e::ReplaceEffect{<:Index,<:Index}), ::DelegateTo) = handle!(delegator(TensorNetwork(), tn), e)
 handle!(_, @nospecialize(e::ReplaceEffect{Iold,Inew}), ::DontDelegate) where {Iold<:Index,Inew<:Index} = nothing # throw(MethodError(handle!, (tn, e)))
 
+## `replace_ind_inner!`
+replace_ind_inner!(tn, old, new) = replace_ind_inner!(tn, old, new, DelegatorTrait(TensorNetwork(), tn))
+replace_ind_inner!(tn, old, new, ::DelegateTo) = replace_ind!(delegator(TensorNetwork(), tn), old, new)
+replace_ind_inner!(tn, old, new, ::DontDelegate) = throw(MethodError(replace_ind_inner!, (tn, old, new)))
+
 ## `slice!`
 function slice!(tn, ind, i)
     checkeffect(tn, SliceEffect(ind, i))
@@ -501,3 +499,8 @@ end
 handle!(tn, @nospecialize(e::SliceEffect)) = handle!(tn, e, DelegatorTrait(TensorNetwork(), tn))
 handle!(tn, @nospecialize(e::SliceEffect), ::DelegateTo) = handle!(delegator(TensorNetwork(), tn), e)
 handle!(_, e::SliceEffect, ::DontDelegate) = nothing # throw(MethodError(handle!, (tn, e)))
+
+## `slice_inner!`
+slice_inner!(tn, ind, i) = slice_inner!(tn, ind, i, DelegatorTrait(TensorNetwork(), tn))
+slice_inner!(tn, ind, i, ::DelegateTo) = slice_inner!(delegator(TensorNetwork(), tn), ind, i)
+slice_inner!(tn, ind, i, ::DontDelegate) = throw(MethodError(slice_inner!, (tn, ind, i)))
