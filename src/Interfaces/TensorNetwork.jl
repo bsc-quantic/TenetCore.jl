@@ -38,15 +38,24 @@ function hasind end
 function ntensors end
 function ninds end
 
-function size_inds end
-function size_ind end
-
 function tensors_with_inds end
 function tensors_contain_inds end
 function tensors_intersect_inds end
 
 function inds_set end
 function inds_parallel_to end
+
+function size_inds end
+function size_ind end
+
+# extra: optional methods that could be other interfaces...
+## get vertex/edge from tensor/index
+function tensor_vertex end
+function index_edge end
+
+## get tensor/index from vertex/edge
+function vertex_tensor end
+function edge_index end
 
 # mutating methods
 function addtensor! end
@@ -75,15 +84,6 @@ function fuse! end
 function fuse_inner! end
 
 # TODO contract!, split!
-
-# extra: optional methods that could be other interfaces...
-## get vertex/edge from tensor/index
-function tensor_vertex end
-function index_edge end
-
-## get tensor/index from vertex/edge
-function vertex_tensor end
-function edge_index end
 
 # effects
 """
@@ -191,48 +191,6 @@ function all_inds_iter(tn, ::DontDelegate)
     @debug "Falling back to default `all_inds_iter` method"
     all_inds(tn)
 end
-
-## `tensor_vertex`
-tensor_vertex(tn, tensor) = tensor_vertex(tn, tensor, DelegatorTrait(TensorNetwork(), tn))
-tensor_vertex(tn, tensor, ::DelegateTo) = tensor_vertex(delegator(TensorNetwork(), tn), tensor)
-function tensor_vertex(tn, tensor, ::DontDelegate)
-    @debug "Falling back to default `tensor_vertex` method"
-    @argcheck hastensor(tn, tensor) "tensor $tensor not found in the Tensor Network"
-    if vertex_type(tn) >: Tensor
-        return Vertex(tensor)
-    else
-        throw(MethodError(tensor_vertex, (tn, tensor)))
-    end
-end
-
-### helper method
-Networks.vertex(tn, tensor::Tensor) = tensor_vertex(tn, tensor)
-
-## `index_edge`
-index_edge(tn, index) = index_edge(tn, index, DelegatorTrait(TensorNetwork(), tn))
-index_edge(tn, index, ::DelegateTo) = index_edge(delegator(TensorNetwork(), tn), index)
-function index_edge(tn, index, ::DontDelegate)
-    @debug "Falling back to default `index_edge` method"
-    @argcheck hasind(tn, index) "index $index not found in the Tensor Network"
-    if edge_type(tn) >: Index
-        return Edge(index)
-    else
-        throw(MethodError(index_edge, (tn, index)))
-    end
-end
-
-### helper method
-Networks.edge(tn, index::Index) = index_edge(tn, index)
-
-## `vertex_tensor`
-vertex_tensor(tn, vertex) = vertex_tensor(tn, vertex, DelegatorTrait(TensorNetwork(), tn))
-vertex_tensor(tn, vertex, ::DelegateTo) = vertex_tensor(delegator(TensorNetwork(), tn), vertex)
-vertex_tensor(tn, vertex, ::DontDelegate) = throw(MethodError(vertex_tensor, (tn, vertex)))
-
-## `edge_index`
-edge_index(tn, edge) = edge_index(tn, edge, DelegatorTrait(TensorNetwork(), tn))
-edge_index(tn, edge, ::DelegateTo) = edge_index(delegator(TensorNetwork(), tn), edge)
-edge_index(tn, edge, ::DontDelegate) = throw(MethodError(edge_index, (tn, edge)))
 
 ## `hastensor`
 hastensor(tn, tensor) = hastensor(tn, tensor, DelegatorTrait(TensorNetwork(), tn))
@@ -370,6 +328,48 @@ function size_ind(tn, i, ::DontDelegate)
     @argcheck !isempty(_tensors) "Index $i not found in the Tensor Network"
     return size(first(_tensors), i)
 end
+
+## `tensor_vertex`
+tensor_vertex(tn, tensor) = tensor_vertex(tn, tensor, DelegatorTrait(TensorNetwork(), tn))
+tensor_vertex(tn, tensor, ::DelegateTo) = tensor_vertex(delegator(TensorNetwork(), tn), tensor)
+function tensor_vertex(tn, tensor, ::DontDelegate)
+    @debug "Falling back to default `tensor_vertex` method"
+    @argcheck hastensor(tn, tensor) "tensor $tensor not found in the Tensor Network"
+    if vertex_type(tn) >: Tensor
+        return Vertex(tensor)
+    else
+        throw(MethodError(tensor_vertex, (tn, tensor)))
+    end
+end
+
+### helper method
+Networks.vertex(tn, tensor::Tensor) = tensor_vertex(tn, tensor)
+
+## `index_edge`
+index_edge(tn, index) = index_edge(tn, index, DelegatorTrait(TensorNetwork(), tn))
+index_edge(tn, index, ::DelegateTo) = index_edge(delegator(TensorNetwork(), tn), index)
+function index_edge(tn, index, ::DontDelegate)
+    @debug "Falling back to default `index_edge` method"
+    @argcheck hasind(tn, index) "index $index not found in the Tensor Network"
+    if edge_type(tn) >: Index
+        return Edge(index)
+    else
+        throw(MethodError(index_edge, (tn, index)))
+    end
+end
+
+### helper method
+Networks.edge(tn, index::Index) = index_edge(tn, index)
+
+## `vertex_tensor`
+vertex_tensor(tn, vertex) = vertex_tensor(tn, vertex, DelegatorTrait(TensorNetwork(), tn))
+vertex_tensor(tn, vertex, ::DelegateTo) = vertex_tensor(delegator(TensorNetwork(), tn), vertex)
+vertex_tensor(tn, vertex, ::DontDelegate) = throw(MethodError(vertex_tensor, (tn, vertex)))
+
+## `edge_index`
+edge_index(tn, edge) = edge_index(tn, edge, DelegatorTrait(TensorNetwork(), tn))
+edge_index(tn, edge, ::DelegateTo) = edge_index(delegator(TensorNetwork(), tn), edge)
+edge_index(tn, edge, ::DontDelegate) = throw(MethodError(edge_index, (tn, edge)))
 
 ## `addtensor!`
 function addtensor!(tn, tensor)
