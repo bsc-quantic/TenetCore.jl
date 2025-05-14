@@ -1,7 +1,7 @@
 name = "TenetCore"
 uuid = "2cc23cfe-e55e-4940-9d06-ab16fa76dba6"
 authors = ["Sergio Sánchez Ramírez <sergio.sanchez.ramirez+git@bsc.es>"]
-version = "0.2.1"
+version = "0.3.0"
 
 [deps]
 ArgCheck = "dce04be8-c92d-5529-be00-80e4d2c0e197"
