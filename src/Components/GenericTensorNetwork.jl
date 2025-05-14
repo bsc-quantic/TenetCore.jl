@@ -4,56 +4,86 @@ using Serialization
 using Random
 using Base: IdSet
 
-@kwdef struct GenericTensorNetwork <: AbstractTensorNetwork
-    tn::SimpleTensorNetwork = SimpleTensorNetwork()
-    tags::TagMixin = TagMixin()
+const LinkBijection = BijectiveDict{Link,Edge{UUID},Dict{Link,Edge{UUID}},Dict{Edge{UUID},Link}}
+const SiteBijection = BijectiveDict{Site,Vertex{UUID},Dict{Site,Vertex{UUID}},Dict{Vertex{UUID},Site}}
+
+struct GenericTensorNetwork <: AbstractTensorNetwork
+    tn::SimpleTensorNetwork
+    sitemap::SiteBijection
+    linkmap::LinkBijection
 end
 
-GenericTensorNetwork(tn::SimpleTensorNetwork; kwargs...) = GenericTensorNetwork(; tn, kwargs...)
+GenericTensorNetwork(; kwargs...) = GenericTensorNetwork(SimpleTensorNetwork(; kwargs...))
+GenericTensorNetwork(tn::SimpleTensorNetwork) = GenericTensorNetwork(tn, SiteBijection(), LinkBijection())
 
 # TODO Find a way to remove the `unsafe` keyword argument from the constructor
-function GenericTensorNetwork(tensors; kwargs...)
-    tn = SimpleTensorNetwork(tensors; kwargs...)
-    tags = TagMixin()
-    return GenericTensorNetwork(; tn, tags)
-end
+GenericTensorNetwork(tensors; kwargs...) = GenericTensorNetwork(SimpleTensorNetwork(tensors; kwargs...))
 
-Base.copy(tn::GenericTensorNetwork) = GenericTensorNetwork(copy(tn.tn), copy(tn.tags))
+Base.copy(tn::GenericTensorNetwork) = GenericTensorNetwork(copy(tn.tn), copy(tn.sitemap), copy(tn.linkmap))
 
 # delegation
 DelegatorTrait(::Network, ::GenericTensorNetwork) = DelegateTo{:tn}()
 DelegatorTrait(::UnsafeScopeable, ::GenericTensorNetwork) = DelegateTo{:tn}()
 DelegatorTrait(::TensorNetwork, ::GenericTensorNetwork) = DelegateTo{:tn}()
-DelegatorTrait(::Taggable, ::GenericTensorNetwork) = DelegateTo{:tags}()
+
+## Taggable implementation
+# DelegatorTrait(::Taggable, ::GenericTensorNetwork) = DelegateTo{:tags}()
+ImplementorTrait(::Taggable, ::GenericTensorNetwork) = Implements()
+
+all_sites(tn::GenericTensorNetwork) = collect(all_sites_iter(tn))
+all_links(tn::GenericTensorNetwork) = collect(all_links_iter(tn))
+
+all_sites_iter(tn::GenericTensorNetwork) = keys(tn.sitemap)
+all_links_iter(tn::GenericTensorNetwork) = keys(tn.linkmap)
+
+hassite(tn::GenericTensorNetwork, site) = haskey(tn.sitemap, site)
+haslink(tn::GenericTensorNetwork, link) = haskey(tn.linkmap, link)
+
+nsites(::@NamedTuple{}, tn::GenericTensorNetwork) = length(tn.sitemap)
+nlinks(::@NamedTuple{}, tn::GenericTensorNetwork) = length(tn.linkmap)
+
+site_vertex(tn::GenericTensorNetwork, site) = tn.sitemap[site]
+link_edge(tn::GenericTensorNetwork, link) = tn.linkmap[link]
+
+vertex_site(tn::GenericTensorNetwork, vertex) = tn.sitemap'[vertex]
+edge_link(tn::GenericTensorNetwork, edge) = tn.linkmap'[edge]
+
+## override to get tensor/index from this level and not from the mixin (which can't)
+# tensor_at(tn::GenericTensorNetwork, tag) = tensor(tn; vertex=site_vertex(tn, tag))
+# ind_at(tn::GenericTensorNetwork, tag) = ind(tn; edge=link_edge(tn, tag))
+
+# site_at(tn::GenericTensorNetwork, tensor::Tensor) = vertex_site(tn, tensor_vertex(tn, tensor))
+# link_at(tn::GenericTensorNetwork, ind::Index) = edge_link(tn, index_edge(tn, ind))
+
+tag_inner!(tn::GenericTensorNetwork, vertex::Vertex, site::Site) = tn.sitemap[site] = vertex
+tag_inner!(tn::GenericTensorNetwork, edge::Edge, link::Link) = tn.linkmap[link] = edge
+
+untag_inner!(tn::GenericTensorNetwork, site::Site) = delete!(tn.sitemap, site)
+untag_inner!(tn::GenericTensorNetwork, link::Link) = delete!(tn.linkmap, link)
 
 # effects
 function handle!(tn::GenericTensorNetwork, @nospecialize(e::RemoveTensorEffect))
-    # notify the mixin that a tensor was deleted
-    handle!(tn.tags, e)
+    # it can break the mapping, so untag if the removed tensor is tagged
+    _vertex = tensor_vertex(tn, e.f)
+    if hasvalue(tn.sitemap, _vertex)
+        site_tag = site_at(tn, e.f)
+        untag_inner!(tn, site_tag)
+    end
 
-    # notify the tensor network that a tensor was deleted
+    # propagate the effect
     handle!(tn.tn, e)
 end
 
-function handle!(tn::GenericTensorNetwork, @nospecialize(e::ReplaceEffect{<:Tensor,<:Tensor}))
-    # notify the mixin that a tensor was deleted
-    handle!(tn.tags, e)
+function handle!(tn::GenericTensorNetwork, e::SliceEffect{<:Integer})
+    # it can break the mapping, so untag if the sliced index is tagged
+    _edge = index_edge(tn, e.ind)
+    if hasvalue(tn.linkmap, _edge)
+        link_tag = link_at(tn, e.ind)
+        untag_inner!(tn, link_tag)
+    end
 
-    # notify the tensor network that a tensor was deleted
+    # propagate the effect
     handle!(tn.tn, e)
-end
-
-function handle!(tn::GenericTensorNetwork, @nospecialize(e::ReplaceEffect{<:Index,<:Index}))
-    # notify the mixin that a tensor was deleted
-    handle!(tn.tags, e)
-
-    # notify the tensor network that a tensor was deleted
-    handle!(tn.tn, e)
-end
-
-function handle!(tn::GenericTensorNetwork, @nospecialize(e::ReplaceEffect{<:Tag,<:Tag}))
-    # notify the mixin that a tensor was deleted
-    handle!(tn.tags, e)
 end
 
 # derived methods

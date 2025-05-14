@@ -1,7 +1,8 @@
 using Test
 using TenetCore
-using TenetCore: LinkBiDict, SiteBiDict
+using TenetCore: LinkBijection, SiteBijection
 using QuantumTags
+using Networks: vertex, edge
 
 struct MockSite{S} <: Site
     tag::S
@@ -22,9 +23,15 @@ struct WrapperTaggableTensorNetwork{T} <: TenetCore.AbstractTensorNetwork
 end
 
 Base.copy(tn::WrapperTaggableTensorNetwork) = WrapperTaggableTensorNetwork(copy(tn.tn))
-TenetCore.DelegatorTrait(::TenetCore.UnsafeScopeable, ::WrapperTaggableTensorNetwork) = TenetCore.DelegateTo{:tn}()
-TenetCore.DelegatorTrait(::TenetCore.TensorNetwork, ::WrapperTaggableTensorNetwork) = TenetCore.DelegateTo{:tn}()
-TenetCore.DelegatorTrait(::TenetCore.Taggable, ::WrapperTaggableTensorNetwork) = TenetCore.DelegateTo{:tn}()
+TenetCore.ImplementorTrait(interface, tn::WrapperTaggableTensorNetwork) = TenetCore.ImplementorTrait(interface, tn.tn)
+
+function TenetCore.DelegatorTrait(interface, tn::WrapperTaggableTensorNetwork)
+    if TenetCore.ImplementorTrait(interface, tn.tn) == TenetCore.Implements()
+        return TenetCore.DelegateTo{:tn}()
+    else
+        return TenetCore.DontDelegate()
+    end
+end
 
 test_tensors = [
     Tensor(zeros(2, 2), [Index(:i), Index(:j)]),
@@ -32,11 +39,15 @@ test_tensors = [
     Tensor(zeros(2), [Index(:j)]),
 ]
 
+test_tn = SimpleTensorNetwork(test_tensors)
+
 test_tagged_tn = GenericTensorNetwork(
-    SimpleTensorNetwork(test_tensors),
-    TenetCore.TagMixin(;
-        linkmap=LinkBiDict(plug"1" => Index(:i), MockLink(plug"2") => Index(:k), bond"1-2" => Index(:j)),
-        sitemap=SiteBiDict(site"1" => test_tensors[1], MockSite(site"2") => test_tensors[2]),
+    test_tn,
+    SiteBijection(site"1" => vertex(test_tn, test_tensors[1]), MockSite(site"2") => vertex(test_tn, test_tensors[2])),
+    LinkBijection(
+        plug"1" => edge(test_tn, Index(:i)),
+        MockLink(plug"2") => edge(test_tn, Index(:k)),
+        bond"1-2" => edge(test_tn, Index(:j)),
     ),
 )
 

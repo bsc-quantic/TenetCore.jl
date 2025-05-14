@@ -1,4 +1,5 @@
 using QuantumTags: Tag
+using Networks: Vertex, Edge
 
 # TODO it has a lot of overlap with the `Lattice` interface
 # TODO try decoupling `Site` and `Link`, and allow setting any `Tag`
@@ -44,6 +45,15 @@ function sites_like end
 function site_like end
 function links_like end
 function link_like end
+
+# extra: optional methods that could be other interfaces...
+## get vertex/edge from site/link
+function site_vertex end
+function link_edge end
+
+## get site/link from vertex/edge
+function vertex_site end
+function edge_link end
 
 # mutating methods
 function tag! end
@@ -196,22 +206,26 @@ end
 ## `tensor_at`
 tensor_at(tn, tag) = tensor_at(tn, tag, DelegatorTrait(Taggable(), tn))
 tensor_at(tn, tag, ::DelegateTo) = tensor_at(delegator(Taggable(), tn), tag)
-tensor_at(tn, tag, ::DontDelegate) = throw(MethodError(tensor_at, (tn, tag)))
+tensor_at(tn, tag, ::DontDelegate) = tensor(tn; vertex=site_vertex(tn, tag))
 
 ## `ind_at`
 ind_at(tn, tag) = ind_at(tn, tag, DelegatorTrait(Taggable(), tn))
 ind_at(tn, tag, ::DelegateTo) = ind_at(delegator(Taggable(), tn), tag)
-ind_at(tn, tag, ::DontDelegate) = throw(MethodError(ind_at, (tn, tag)))
+ind_at(tn, tag, ::DontDelegate) = ind(tn; edge=link_edge(tn, tag))
 
 ## `site_at`
 site_at(tn, x) = site_at(tn, x, DelegatorTrait(Taggable(), tn))
 site_at(tn, x, ::DelegateTo) = site_at(delegator(Taggable(), tn), x)
 site_at(tn, x, ::DontDelegate) = throw(MethodError(site_at, (tn, x)))
+site_at(tn, tensor::Tensor, ::DontDelegate) = vertex_site(tn, tensor_vertex(tn, tensor))
+site_at(tn, v::Networks.AbstractVertex, ::DontDelegate) = vertex_site(tn, v)
 
 ## `link_at`
 link_at(tn, x) = link_at(tn, x, DelegatorTrait(Taggable(), tn))
 link_at(tn, x, ::DelegateTo) = link_at(delegator(Taggable(), tn), x)
 link_at(tn, x, ::DontDelegate) = throw(MethodError(link_at, (tn, x)))
+link_at(tn, ind::Index, ::DontDelegate) = edge_link(tn, index_edge(tn, ind))
+link_at(tn, e::Networks.AbstractEdge, ::DontDelegate) = edge_link(tn, e)
 
 ## `size_link`
 size_link(tn, link) = size_ind(tn, ind_at(tn, link))
@@ -238,6 +252,26 @@ function link_like(isequal_f, tn, ref_link)
     first(links_like(isequal_f, tn, ref_link))
 end
 
+## `site_vertex`
+site_vertex(tn, site) = site_vertex(tn, site, DelegatorTrait(Taggable(), tn))
+site_vertex(tn, site, ::DelegateTo) = site_vertex(delegator(Taggable(), tn), site)
+site_vertex(tn, site, ::DontDelegate) = throw(MethodError(site_vertex, (tn, site)))
+
+## `link_edge`
+link_edge(tn, link) = link_edge(tn, link, DelegatorTrait(Taggable(), tn))
+link_edge(tn, link, ::DelegateTo) = link_edge(delegator(Taggable(), tn), link)
+link_edge(tn, link, ::DontDelegate) = throw(MethodError(link_edge, (tn, link)))
+
+## `vertex_site`
+vertex_site(tn, vertex) = vertex_site(tn, vertex, DelegatorTrait(Taggable(), tn))
+vertex_site(tn, vertex, ::DelegateTo) = vertex_site(delegator(Taggable(), tn), vertex)
+vertex_site(tn, vertex, ::DontDelegate) = throw(MethodError(vertex_site, (tn, vertex)))
+
+## `edge_link`
+edge_link(tn, edge) = edge_link(tn, edge, DelegatorTrait(Taggable(), tn))
+edge_link(tn, edge, ::DelegateTo) = edge_link(delegator(Taggable(), tn), edge)
+edge_link(tn, edge, ::DontDelegate) = throw(MethodError(edge_link, (tn, edge)))
+
 ## `tag!`
 function tag!(tn, x, tag)
     checkeffect(tn, TagEffect(tag, x))
@@ -246,12 +280,26 @@ function tag!(tn, x, tag)
     return tn
 end
 
+tag!(tn, tensor::Tensor, tag) = tag!(tn, tensor_vertex(tn, tensor), tag)
+tag!(tn, ind::Index, tag) = tag!(tn, index_edge(tn, ind), tag)
+
 checkeffect(tn, @nospecialize(e::TagEffect)) = checkeffect(tn, e, DelegatorTrait(Taggable(), tn))
 checkeffect(tn, @nospecialize(e::TagEffect), ::DelegateTo) = checkeffect(delegator(Taggable(), tn), e)
+checkeffect(tn, @nospecialize(e::TagEffect), ::DontDelegate) = throw(MethodError(checkeffect, (tn, e)))
+
+function checkeffect(tn, @nospecialize(e::TagEffect{<:Site,<:Vertex}))
+    hassite(tn, e.tag) && throw(ArgumentError("Tag $(e.tag) already exists in TensorNetwork"))
+    hasvertex(tn, e.obj) || throw(ArgumentError("Vertex not found in TensorNetwork"))
+end
 
 function checkeffect(tn, @nospecialize(e::TagEffect{<:Site,<:Tensor}))
     hassite(tn, e.tag) && throw(ArgumentError("Tag $(e.tag) already exists in TensorNetwork"))
     hastensor(tn, e.obj) || throw(ArgumentError("Tensor not found in TensorNetwork"))
+end
+
+function checkeffect(tn, @nospecialize(e::TagEffect{<:Link,<:Edge}))
+    haslink(tn, e.tag) && throw(ArgumentError("Tag $(e.tag) already exists in TensorNetwork"))
+    hasedge(tn, e.obj) || throw(ArgumentError("Edge not found in TensorNetwork"))
 end
 
 function checkeffect(tn, @nospecialize(e::TagEffect{<:Link,<:Index}))
@@ -278,6 +326,7 @@ end
 
 checkeffect(tn, @nospecialize(e::UntagEffect)) = checkeffect(tn, e, DelegatorTrait(Taggable(), tn))
 checkeffect(tn, @nospecialize(e::UntagEffect), ::DelegateTo) = checkeffect(delegator(Taggable(), tn), e)
+checkeffect(tn, @nospecialize(e::UntagEffect), ::DontDelegate) = throw(MethodError(checkeffect, (tn, e)))
 
 function checkeffect(tn, @nospecialize(e::UntagEffect{<:Site}))
     hassite(tn, e.tag) || throw(ArgumentError("Site $(e.tag) not found in TensorNetwork"))
@@ -341,9 +390,9 @@ function replace_tag_inner!(tn, old_tag::Site, new_tag::Site, ::DontDelegate)
     hassite(tn, old_tag) || throw(ArgumentError("old tag not found"))
     hassite(tn, new_tag) && throw(ArgumentError("new tag already exists"))
 
-    tensor = tensor_at(tn, old_tag)
+    _vertex = site_vertex(tn, old_tag)
     untag_inner!(tn, old_tag)
-    tag_inner!(tn, tensor, new_tag)
+    tag_inner!(tn, _vertex, new_tag)
 end
 
 function replace_tag_inner!(tn, old_tag::Link, new_tag::Link, ::DontDelegate)
@@ -353,7 +402,7 @@ function replace_tag_inner!(tn, old_tag::Link, new_tag::Link, ::DontDelegate)
     haslink(tn, old_tag) || throw(ArgumentError("old tag not found"))
     haslink(tn, new_tag) && throw(ArgumentError("new tag already exists"))
 
-    ind = ind_at(tn, old_tag)
+    _edge = link_edge(tn, old_tag)
     untag_inner!(tn, old_tag)
-    tag_inner!(tn, ind, new_tag)
+    tag_inner!(tn, _edge, new_tag)
 end

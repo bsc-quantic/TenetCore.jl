@@ -58,9 +58,6 @@ include("Operations/AbstractTensorNetwork.jl")
 include("Components/SimpleTensorNetwork.jl")
 export SimpleTensorNetwork
 
-include("Components/TagMixin.jl")
-@compat public TagMixin
-
 include("Components/GenericTensorNetwork.jl")
 export GenericTensorNetwork
 
