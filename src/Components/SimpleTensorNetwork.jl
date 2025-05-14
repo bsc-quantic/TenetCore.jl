@@ -101,7 +101,7 @@ vertex_tensor(tn::SimpleTensorNetwork, vertex) = tn.tensormap[vertex]
 edge_index(tn::SimpleTensorNetwork, edge) = tn.indmap[edge]
 
 # UnsafeScopeable implementation
-implements(::UnsafeScopeable, ::SimpleTensorNetwork) = Implements()
+ImplementorTrait(::UnsafeScopeable, ::SimpleTensorNetwork) = Implements()
 
 get_unsafe_scope(tn::SimpleTensorNetwork) = tn.unsafe[]
 set_unsafe_scope!(tn::SimpleTensorNetwork, uc::Union{Nothing,UnsafeScope}) = tn.unsafe[] = uc
@@ -118,7 +118,7 @@ function checksizes(tn::SimpleTensorNetwork)
 end
 
 # TensorNetwork implementation
-implements(::TensorNetwork, ::SimpleTensorNetwork) = Implements()
+ImplementorTrait(::TensorNetwork, ::SimpleTensorNetwork) = Implements()
 
 function all_tensors(tn::SimpleTensorNetwork)
     return get!(tn.sorted_tensors) do
