@@ -1,5 +1,4 @@
 using QuantumTags
-using QuantumTags: Tag
 using Serialization
 using Random
 using Base: IdSet
