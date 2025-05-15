@@ -61,4 +61,7 @@ export SimpleTensorNetwork
 include("Components/GenericTensorNetwork.jl")
 export GenericTensorNetwork
 
+# extra
+include("Operations/TensorExtra.jl")
+
 end
