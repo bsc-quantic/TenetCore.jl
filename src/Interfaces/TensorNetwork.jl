@@ -435,6 +435,8 @@ rmtensor_inner!(tn, tensor, ::DontDelegate) = throw(MethodError(rmtensor_inner!,
 
 ## `replace_tensor!`
 function replace_tensor!(tn, old_tensor, new_tensor)
+    old_tensor === new_tensor && return tn
+
     checkeffect(tn, ReplaceEffect(old_tensor, new_tensor))
     replace_tensor_inner!(tn, old_tensor, new_tensor)
     handle!(tn, ReplaceEffect(old_tensor, new_tensor))
@@ -470,6 +472,8 @@ replace_tensor_inner!(tn, old, new, ::DontDelegate) = throw(MethodError(replace_
 
 ## `replace_ind!`
 function replace_ind!(tn, old_ind, new_ind)
+    old_ind == new_ind && return tn
+
     checkeffect(tn, ReplaceEffect(old_ind, new_ind))
     replace_ind_inner!(tn, old_ind, new_ind)
     handle!(tn, ReplaceEffect(old_ind, new_ind))
