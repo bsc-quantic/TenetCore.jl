@@ -80,6 +80,11 @@ See also: [`selectdim`](@ref), [`view`](@ref).
 function slice! end
 function slice_inner! end
 
+"""
+    fuse!(tn, ind)
+
+Group indices parallel to `ind` and reshape the tensors accordingly.
+"""
 function fuse! end
 function fuse_inner! end
 
@@ -131,6 +136,16 @@ Represents the effect of slicing an index on a dimension.
 struct SliceEffect{D} <: Effect
     ind::Index
     dim::D
+end
+
+"""
+    FuseEffect <: Effect
+
+Represents the effect of fusing indices in a Tensor Network.
+"""
+struct FuseEffect <: Effect
+    old_inds::Vector{Index}
+    new_ind::Index
 end
 
 # implementation
@@ -504,3 +519,31 @@ handle!(_, e::SliceEffect, ::DontDelegate) = nothing # throw(MethodError(handle!
 slice_inner!(tn, ind, i) = slice_inner!(tn, ind, i, DelegatorTrait(TensorNetwork(), tn))
 slice_inner!(tn, ind, i, ::DelegateTo) = slice_inner!(delegator(TensorNetwork(), tn), ind, i)
 slice_inner!(tn, ind, i, ::DontDelegate) = throw(MethodError(slice_inner!, (tn, ind, i)))
+
+## `fuse!`
+function fuse!(tn, i)
+    parinds = inds(tn; parallelto=i)
+    length(parinds) == 0 && return tn
+
+    parinds = (i,) ∪ parinds
+    checkeffect(tn, FuseEffect(parinds, i))
+    fuse_inner!(tn, parinds)
+    handle!(tn, FuseEffect(parinds, i))
+
+    return tn
+end
+
+## `fuse_inner!`
+fuse_inner!(tn, i) = fuse_inner!(tn, i, DelegatorTrait(TensorNetwork(), tn))
+fuse_inner!(tn, i, ::DelegateTo) = fuse!(DelegatorTrait(TensorNetwork(), tn), i)
+
+# TODO replace ind for `Index(Fused(parinds))`?
+function fuse_inner!(tn, parinds, ::DontDelegate)
+    @debug "Fallback to default fuse_inner! for $(typeof(tn))"
+    @unsafe_region tn for tensor in tensors(tn; intersect=parinds)
+        # the way it is currently implemented, we must emit a `ReplaceEffect` because `Tensors` have changed
+        # TODO maybe refactor this when we stop using `Tensors` as graph vertices?
+        replace_tensor!(tn, tensor, Muscle.fuse(tensor, parinds))
+    end
+    return tn
+end

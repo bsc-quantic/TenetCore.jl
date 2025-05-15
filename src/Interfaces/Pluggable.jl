@@ -62,16 +62,6 @@ struct UnsetPlugEffect{T} <: Effect
     plug::T
 end
 
-# TODO move to TensorNetwork!
-"""
-    FuseEffect <: Effect
-
-Represents the effect of fusing indices in a Tensor Network.
-"""
-struct FuseEffect <: Effect
-    inds::Vector{Index}
-end
-
 # implementation
 ## `plugs`
 # plugs(tn; kwargs...) = plugs(sort_nt(values(kwargs)), tn)
