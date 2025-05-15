@@ -187,7 +187,7 @@ all_tensors(tn, ::DontDelegate) = throw(MethodError(all_tensors, (tn,)))
 all_inds(tn) = all_inds(tn, DelegatorTrait(TensorNetwork(), tn))
 all_inds(tn, ::DelegateTo) = all_inds(delegator(TensorNetwork(), tn))
 function all_inds(tn, ::DontDelegate)
-    @debug "Falling back to default `all_inds` method"
+    fallback(all_inds)
     mapreduce(inds, ∪, tensors(tn); init=Index[])
 end
 
@@ -195,7 +195,7 @@ end
 all_tensors_iter(tn) = all_tensors_iter(tn, DelegatorTrait(TensorNetwork(), tn))
 all_tensors_iter(tn, ::DelegateTo) = all_tensors_iter(delegator(TensorNetwork(), tn))
 function all_tensors_iter(tn, ::DontDelegate)
-    @debug "Falling back to default `all_tensors_iter` method"
+    fallback(all_tensors_iter)
     all_tensors(tn)
 end
 
@@ -203,7 +203,7 @@ end
 all_inds_iter(tn) = all_inds_iter(tn, DelegatorTrait(TensorNetwork(), tn))
 all_inds_iter(tn, ::DelegateTo) = all_inds_iter(delegator(TensorNetwork(), tn))
 function all_inds_iter(tn, ::DontDelegate)
-    @debug "Falling back to default `all_inds_iter` method"
+    fallback(all_inds_iter)
     all_inds(tn)
 end
 
@@ -211,7 +211,7 @@ end
 hastensor(tn, tensor) = hastensor(tn, tensor, DelegatorTrait(TensorNetwork(), tn))
 hastensor(tn, tensor, ::DelegateTo) = hastensor(delegator(TensorNetwork(), tn), tensor)
 function hastensor(tn, tensor, ::DontDelegate)
-    @debug "Falling back to default `hastensor` method"
+    fallback(hastensor)
     any(Base.Fix1(===, tensor), all_tensors(tn))
 end
 
@@ -219,7 +219,7 @@ end
 hasind(tn, i) = hasind(tn, i, DelegatorTrait(TensorNetwork(), tn))
 hasind(tn, i, ::DelegateTo) = hasind(delegator(TensorNetwork(), tn), i)
 function hasind(tn, i, _)
-    @debug "Falling back to default `hasind` method"
+    fallback(hasind)
     i ∈ all_inds(tn)
 end
 
@@ -227,7 +227,7 @@ end
 ntensors(tn; kwargs...) = ntensors(sort_nt(values(kwargs)), tn)
 
 function ntensors(kwargs::NamedTuple, tn)
-    @debug "Falling back to default `ntensors` method"
+    fallback(ntensors)
     length(tensors(kwargs, tn))
 end
 
@@ -235,7 +235,7 @@ end
 ntensors(::@NamedTuple{}, tn) = ntensors((;), tn, DelegatorTrait(TensorNetwork(), tn))
 ntensors(::@NamedTuple{}, tn, ::DelegateTo) = ntensors(delegator(TensorNetwork(), tn))
 function ntensors(::@NamedTuple{}, tn, ::DontDelegate)
-    @debug "Falling back to default `ntensors` method"
+    fallback(ntensors)
     length(all_tensors(tn))
 end
 
@@ -243,7 +243,7 @@ end
 ninds(tn; kwargs...) = ninds(sort_nt(values(kwargs)), tn)
 
 function ninds(kwargs::NamedTuple, tn)
-    @debug "Falling back to default `ninds` method"
+    fallback(ninds)
     length(inds(kwargs, tn))
 end
 
@@ -251,7 +251,7 @@ end
 ninds(::@NamedTuple{}, tn) = ninds((;), tn, DelegatorTrait(TensorNetwork(), tn))
 ninds(::@NamedTuple{}, tn, ::DelegateTo) = ninds((;), delegator(TensorNetwork(), tn))
 function ninds(::@NamedTuple{}, tn, ::DontDelegate)
-    @debug "Falling back to default `ninds` method"
+    fallback(ninds)
     length(all_inds(tn))
 end
 
@@ -283,7 +283,7 @@ inds_set(tn, ::Val{:open}) = inds_set_open(tn)
 inds_set_open(tn) = inds_set_open(tn, DelegatorTrait(TensorNetwork(), tn))::Vector{<:Index}
 inds_set_open(tn, ::DelegateTo) = inds_set_open(delegator(TensorNetwork(), tn))
 function inds_set_open(tn, ::DontDelegate)
-    @debug "Falling back to default `inds_set_open` method"
+    fallback(inds_set_open)
     selected = Index[]
     histogram = hist(Iterators.flatten(Iterators.map(inds, tensors(tn))); init=Dict{Index,Int}())
     append!(selected, Iterators.map(first, Iterators.filter(((k, c),) -> c == 1, histogram)))
@@ -294,7 +294,7 @@ inds_set(tn, ::Val{:inner}) = inds_set_inner(tn)
 inds_set_inner(tn) = inds_set_inner(tn, DelegatorTrait(TensorNetwork(), tn))::Vector{<:Index}
 inds_set_inner(tn, ::DelegateTo) = inds_set_inner(delegator(TensorNetwork(), tn))
 function inds_set_inner(tn, ::DontDelegate)
-    @debug "Falling back to default `inds_set_inner` method"
+    fallback(inds_set_inner)
     selected = Index[]
     histogram = hist(Iterators.flatten(Iterators.map(inds, tensors(tn))); init=Dict{Index,Int}())
     append!(selected, first.(Iterators.filter(((k, c),) -> c == 2, histogram)))
@@ -305,7 +305,7 @@ inds_set(tn, ::Val{:hyper}) = inds_set_hyper(tn)
 inds_set_hyper(tn) = inds_set_hyper(tn, DelegatorTrait(TensorNetwork(), tn))::Vector{<:Index}
 inds_set_hyper(tn, ::DelegateTo) = inds_set_hyper(delegator(TensorNetwork(), tn))
 function inds_set_hyper(tn, ::DontDelegate)
-    @debug "Falling back to default `inds_set_hyper` method"
+    fallback(inds_set_hyper)
     selected = Index[]
     histogram = hist(Iterators.flatten(Iterators.map(inds, tensors(tn))); init=Dict{Index,Int}())
     append!(selected, Iterators.map(first, Iterators.filter(((k, c),) -> c >= 3, histogram)))
@@ -324,7 +324,7 @@ end
 size_inds(tn) = size_inds(tn, DelegatorTrait(TensorNetwork(), tn))
 size_inds(tn, ::DelegateTo) = size_inds(delegator(TensorNetwork(), tn))
 function size_inds(tn, ::DontDelegate)
-    @debug "Falling back to default `size_inds` method"
+    fallback(size_inds)
     sizes = Dict{Index,Int}()
     for tensor in tensors(tn)
         for ind in inds(tensor)
@@ -338,7 +338,7 @@ end
 size_ind(tn, i) = size_ind(tn, i, DelegatorTrait(TensorNetwork(), tn))
 size_ind(tn, i, ::DelegateTo) = size_ind(delegator(TensorNetwork(), tn), i)
 function size_ind(tn, i, ::DontDelegate)
-    @debug "Falling back to default `size_ind` method"
+    fallback(size_ind)
     _tensors = tensors(tn; contain=i)
     @argcheck !isempty(_tensors) "Index $i not found in the Tensor Network"
     return size(first(_tensors), i)
@@ -348,7 +348,7 @@ end
 tensor_vertex(tn, tensor) = tensor_vertex(tn, tensor, DelegatorTrait(TensorNetwork(), tn))
 tensor_vertex(tn, tensor, ::DelegateTo) = tensor_vertex(delegator(TensorNetwork(), tn), tensor)
 function tensor_vertex(tn, tensor, ::DontDelegate)
-    @debug "Falling back to default `tensor_vertex` method"
+    fallback(tensor_vertex)
     @argcheck hastensor(tn, tensor) "tensor $tensor not found in the Tensor Network"
     if vertex_type(tn) >: Tensor
         return Vertex(tensor)
@@ -364,7 +364,7 @@ Networks.vertex(tn, tensor::Tensor) = tensor_vertex(tn, tensor)
 index_edge(tn, index) = index_edge(tn, index, DelegatorTrait(TensorNetwork(), tn))
 index_edge(tn, index, ::DelegateTo) = index_edge(delegator(TensorNetwork(), tn), index)
 function index_edge(tn, index, ::DontDelegate)
-    @debug "Falling back to default `index_edge` method"
+    fallback(index_edge)
     @argcheck hasind(tn, index) "index $index not found in the Tensor Network"
     if edge_type(tn) >: Index
         return Edge(index)
@@ -539,7 +539,7 @@ fuse_inner!(tn, i, ::DelegateTo) = fuse!(DelegatorTrait(TensorNetwork(), tn), i)
 
 # TODO replace ind for `Index(Fused(parinds))`?
 function fuse_inner!(tn, parinds, ::DontDelegate)
-    @debug "Fallback to default fuse_inner! for $(typeof(tn))"
+    fallback(fuse_inner!)
     @unsafe_region tn for tensor in tensors(tn; intersect=parinds)
         # the way it is currently implemented, we must emit a `ReplaceEffect` because `Tensors` have changed
         # TODO maybe refactor this when we stop using `Tensors` as graph vertices?

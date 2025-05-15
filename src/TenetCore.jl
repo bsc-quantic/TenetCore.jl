@@ -15,10 +15,12 @@ import EinExprs: inds
 
 include("Utils.jl")
 
+@reexport using Networks
 import Networks: Interface
 import Networks: DelegatorTrait, DontDelegate, DelegateTo, delegator
 import Networks: ImplementorTrait, NotImplements, Implements
 import Networks: Effect, checkeffect, handle!
+using Networks: fallback
 
 # NOTE for developers
 # try using functions owned by us (e.g. `mysize` instead of `Base.size`)

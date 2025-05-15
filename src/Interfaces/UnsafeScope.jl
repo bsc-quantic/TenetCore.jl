@@ -29,7 +29,7 @@ set_unsafe_scope!(tn, uc, ::DontDelegate) = throw(MethodError(set_unsafe_scope!,
 checksizes(tn) = checksizes(tn, DelegatorTrait(UnsafeScopeable(), tn))
 checksizes(tn, ::DelegateTo) = checksizes(delegator(UnsafeScopeable(), tn))
 function checksizes(tn, ::DontDelegate)
-    @debug "Falling back to default `checksizes` method"
+    fallback(checksizes)
     sizedict = size(tn)
     return all(tensors(tn)) do tensor
         return all(enumerate(inds(tensor))) do (i, ind)

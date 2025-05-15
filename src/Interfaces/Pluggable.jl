@@ -82,7 +82,7 @@ all_plugs(tn, ::DontDelegate) = throw(MethodError(all_plugs, (tn,)))
 all_plugs_iter(tn) = all_plugs_iter(tn, DelegatorTrait(Pluggable(), tn))
 all_plugs_iter(tn, ::DelegateTo) = all_plugs_iter(delegator(Pluggable(), tn))
 function all_plugs_iter(tn, ::DontDelegate)
-    @debug "Falling back to default implementation of `all_plugs_iter`"
+    fallback(all_plugs_iter)
     all_plugs(tn)
 end
 

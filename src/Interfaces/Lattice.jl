@@ -106,7 +106,7 @@ all_bonds(lattice, ::DontDelegate) = error("") # filter(isbond, )
 hassite(lattice, site) = hassite(lattice, site, DelegatorTrait(Lattice(), lattice))
 hassite(lattice, site, ::DelegateTo) = hassite(delegator(Lattice(), lattice), site)
 function hassite(lattice, site, ::DontDelegate)
-    @debug "Falling back to default implementation of `hassite`"
+    fallback(hassite)
     all_sites(lattice) |> any(Base.Fix1(is_site_equal, site))
 end
 
@@ -114,7 +114,7 @@ end
 hasbond(lattice, bond) = hasbond(lattice, bond, DelegatorTrait(Lattice(), lattice))
 hasbond(lattice, bond, ::DelegateTo) = hasbond(delegator(Lattice(), lattice), bond)
 function hasbond(lattice, bond, ::DontDelegate)
-    @debug "Falling back to default implementation of `hasbond`"
+    fallback(hasbond)
     all_bonds(lattice) |> any(Base.Fix1(is_bond_equal, bond))
 end
 
@@ -122,7 +122,7 @@ end
 nsites(lattice) = nsites(lattice, DelegatorTrait(Lattice(), lattice))
 nsites(lattice, ::DelegateTo) = nsites(delegator(Lattice(), lattice))
 function nsites(lattice, ::DontDelegate)
-    @debug "Falling back to default implementation of `nsites`"
+    fallback(nsites)
     all_sites(lattice) |> length
 end
 
@@ -130,7 +130,7 @@ end
 nbonds(lattice) = nbonds(lattice, DelegatorTrait(Lattice(), lattice))
 nbonds(lattice, ::DelegateTo) = nbonds(delegator(Lattice(), lattice))
 function nbonds(lattice, ::DontDelegate)
-    @debug "Falling back to default implementation of `nbonds`"
+    fallback(nbonds)
     all_bonds(lattice) |> length
 end
 

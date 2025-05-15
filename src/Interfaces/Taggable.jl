@@ -146,7 +146,7 @@ all_links(tn, ::DontDelegate) = throw(MethodError(all_links, (tn,)))
 all_sites_iter(tn) = all_sites_iter(tn, DelegatorTrait(Taggable(), tn))
 all_sites_iter(tn, ::DelegateTo) = all_sites_iter(delegator(Taggable(), tn))
 function all_sites_iter(tn, ::DontDelegate)
-    @debug "Falling back to default `all_sites_iter` method"
+    fallback(all_sites_iter)
     sites(tn)
 end
 
@@ -161,7 +161,7 @@ all_links_iter(tn, ::DontDelegate) = links(tn)
 hassite(tn, site) = hassite(tn, site, DelegatorTrait(Taggable(), tn))
 hassite(tn, site, ::DelegateTo) = hassite(delegator(Taggable(), tn), site)
 function hassite(tn, site, ::DontDelegate)
-    @debug "Falling back to default `hassite` method"
+    fallback(hassite)
     site ∈ all_sites(tn)
 end
 
@@ -169,7 +169,7 @@ end
 haslink(tn, link) = haslink(tn, link, DelegatorTrait(Taggable(), tn))
 haslink(tn, link, ::DelegateTo) = haslink(delegator(Taggable(), tn), link)
 function haslink(tn, link, ::DontDelegate)
-    @debug "Falling back to default `haslink` method"
+    fallback(haslink)
     link ∈ all_links(tn)
 end
 
@@ -179,12 +179,12 @@ nsites(::@NamedTuple{}, tn) = nsites((;), tn, DelegatorTrait(Taggable(), tn))
 nsites(::@NamedTuple{}, tn, ::DelegateTo) = nsites(delegator(Taggable(), tn))
 
 function nsites(::@NamedTuple{}, tn, ::DontDelegate)
-    @debug "Falling back to default `nsites` method"
+    fallback(nsites)
     length(sites(tn))
 end
 
 function nsites(kwargs::NamedTuple, tn)
-    @debug "Falling back to default `nsites` method"
+    fallback(nsites)
     length(sites(kwargs, tn))
 end
 
@@ -194,12 +194,12 @@ nlinks(::@NamedTuple{}, tn) = nlinks((;), tn, DelegatorTrait(Taggable(), tn))
 nlinks(::@NamedTuple{}, tn, ::DelegateTo) = nlinks(delegator(Taggable(), tn))
 
 function nlinks(::@NamedTuple{}, tn, ::DontDelegate)
-    @debug "Falling back to default `nlinks` method"
+    fallback(nlinks)
     length(links(tn))
 end
 
 function nlinks(kwargs::NamedTuple, tn)
-    @debug "Falling back to default `nlinks` method"
+    fallback(nlinks)
     length(links(kwargs, tn))
 end
 
@@ -384,7 +384,7 @@ replace_tag_inner!(tn, old_tag, new_tag) = replace_tag_inner!(tn, old_tag, new_t
 replace_tag_inner!(tn, old_tag, new_tag, ::DelegateTo) = replace_tag_inner!(delegator(Taggable(), tn), old_tag, new_tag)
 
 function replace_tag_inner!(tn, old_tag::Site, new_tag::Site, ::DontDelegate)
-    @debug "Falling back to the default `replace_tag_inner!` method"
+    fallback(replace_tag_inner!)
 
     old_tag == new_tag && return tn
     hassite(tn, old_tag) || throw(ArgumentError("old tag not found"))
@@ -396,7 +396,7 @@ function replace_tag_inner!(tn, old_tag::Site, new_tag::Site, ::DontDelegate)
 end
 
 function replace_tag_inner!(tn, old_tag::Link, new_tag::Link, ::DontDelegate)
-    @debug "Falling back to the default `replace_tag_inner!` method"
+    fallback(replace_tag_inner!)
 
     old_tag == new_tag && return tn
     haslink(tn, old_tag) || throw(ArgumentError("old tag not found"))
