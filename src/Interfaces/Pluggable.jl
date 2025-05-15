@@ -95,7 +95,7 @@ function all_plugs_iter(tn, ::DontDelegate)
 end
 
 ## `hasplug`
-hasplug(tn, plug) = any(Base.Fix1(is_plug_equal, plug), links_iter(tn))
+hasplug(tn, plug) = any(Base.Fix1(is_plug_equal, plug), all_links_iter(tn))
 
 ## `nplugs`
 nplugs(tn; kwargs...) = length(all_plugs(tn; kwargs...))
@@ -111,7 +111,7 @@ ind_at_plug(tn, plug) = ind_at(tn, tag_like(tn, plug))
 ind(kwargs::NamedTuple{(:plug,)}, tn) = ind_at_plug(tn, kwargs.plug)
 
 ## `plug_at`
-# plug_at(tn, plug) = first(Iterators.filter(Base.Fix1(is_plug_equal, plug), links_iter(tn)))
+# plug_at(tn, plug) = first(Iterators.filter(Base.Fix1(is_plug_equal, plug), all_links_iter(tn)))
 
 ## `plugs_set`
 @valsplit plugs_set(tn, Val(set::Symbol)) = throw(ArgumentError("invalid `set` values: $(set)"))
