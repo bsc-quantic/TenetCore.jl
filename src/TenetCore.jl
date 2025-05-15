@@ -47,8 +47,6 @@ include("Interfaces/Pluggable.jl")
 @compat public Pluggable
 export plugs, plug, nplugs, hasplug, plugs_like, plug_like, ind_at_plug, plugs_like, plug_like, align!, @align!
 
-include("Interfaces/Attributeable.jl")
-
 # aliases to `Base` are in "src/Operations/AbstractTensorNetwork.jl"
 include("Operations/TensorNetwork.jl")
 include("Operations/Pluggable.jl")
