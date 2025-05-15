@@ -40,6 +40,7 @@ function inds_set_outputs end
 function adjoint_plugs! end
 
 # effects
+# TODO aren't these affected or treated already by the `Taggable` interface?
 """
     SetPlugEffect{Tag,Obj} <: Effect
 
@@ -61,6 +62,7 @@ struct UnsetPlugEffect{T} <: Effect
     plug::T
 end
 
+# TODO move to TensorNetwork!
 """
     FuseEffect <: Effect
 
