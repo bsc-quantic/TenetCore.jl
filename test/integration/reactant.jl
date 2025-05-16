@@ -29,7 +29,7 @@ end
 
     grad_contract(x) = Enzyme.gradient(Reverse, contract, x)
 
-    grad_tn = @jit grad_contract(tn_re)
+    (grad_tn,) = @jit grad_contract(tn_re)
     @test vertex_tensor(grad_tn, tensor_vertex(tn, A)) ≈ B
     @test vertex_tensor(grad_tn, tensor_vertex(tn, B)) ≈ A
 end
