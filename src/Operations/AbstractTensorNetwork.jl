@@ -285,3 +285,10 @@ LinearAlgebra.adjoint!(tn::AbstractTensorNetwork) = adjoint_plugs!(conj!(tn))
 
 # Attributeable interface
 # TODO Base.get?
+
+# Pluggable interface
+# TODO couldn't be written more generically as `plug` belongs to `QuantumTags`. maybe rewrite?
+## `plug`
+plug(tn::AbstractTensorNetwork; kwargs...) = plug(sort_nt(values(kwargs)), tn)
+plug(::NamedTuple{(:at,)}, tn) = plug_at(tn, kwargs.at)
+plug(::NamedTuple{(:like,)}, tn) = plug_like(tn, kwargs.like)

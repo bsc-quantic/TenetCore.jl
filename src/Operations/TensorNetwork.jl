@@ -141,4 +141,6 @@ function resetinds!(tn, method=:gensymclean; kwargs...)
     for ind in _inds
         replace!(tn, ind => new_name_f(ind))
     end
+
+    return tn
 end

@@ -60,6 +60,10 @@ tag_inner!(tn::GenericTensorNetwork, edge::Edge, link::Link) = tn.linkmap[link] 
 untag_inner!(tn::GenericTensorNetwork, site::Site) = delete!(tn.sitemap, site)
 untag_inner!(tn::GenericTensorNetwork, link::Link) = delete!(tn.linkmap, link)
 
+## Pluggable implementation
+ImplementorTrait(::Pluggable, ::GenericTensorNetwork) = Implements()
+DelegatorTrait(::Pluggable, ::GenericTensorNetwork) = DelegateToInterface{Taggable}()
+
 # effects
 function handle!(tn::GenericTensorNetwork, @nospecialize(e::RemoveTensorEffect))
     # it can break the mapping, so untag if the removed tensor is tagged

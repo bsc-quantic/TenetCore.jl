@@ -35,7 +35,6 @@ export inds, ind, hasind, ninds, all_inds, all_inds_iter, replace_ind!
 export tensors_with_inds, tensors_contain_inds, tensors_intersect_inds
 export inds_set, inds_parallel_to
 export size_inds, size_ind
-export arrays, contract
 
 include("Interfaces/Taggable.jl")
 # include("Interfaces/Lattice.jl")
@@ -47,11 +46,29 @@ export tag!, untag!, replace_tag!
 
 include("Interfaces/Pluggable.jl")
 @compat public Pluggable
-export plugs, plug, nplugs, hasplug, plugs_like, plug_like, ind_at_plug, plugs_like, plug_like, align!, @align!
+export plugs,
+    plug,
+    all_plugs,
+    all_plugs_iter,
+    nplugs,
+    hasplug,
+    plugs_like,
+    plug_like,
+    ind_at_plug,
+    plugs_set_outputs,
+    plugs_set_inputs,
+    inds_set_physical,
+    inds_set_virtual,
+    inds_set_inputs,
+    inds_set_outputs
 
 # aliases to `Base` are in "src/Operations/AbstractTensorNetwork.jl"
 include("Operations/TensorNetwork.jl")
+export arrays, contract, resetinds!
+
 include("Operations/Pluggable.jl")
+export adjoint_plugs!, align!, @align!
+
 include("Operations/AbstractTensorNetwork.jl")
 
 # implementations

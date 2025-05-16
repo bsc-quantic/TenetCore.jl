@@ -1,3 +1,24 @@
+function adjoint_plugs!(tn)
+    # update plug information and rename inner indices
+    # generate mapping
+    mapping = Dict(plug => ind(tn; at=plug) for plug in all_plugs(tn))
+
+    # remove sites preemptively to avoid issues on renaming
+    for plug_tag in all_plugs(tn)
+        untag!(tn, plug_tag)
+    end
+
+    # set new site mapping
+    for (site, index) in mapping
+        tag!(tn, index, site')
+    end
+
+    # rename inner indices
+    # replace!(tn, map(i -> i => Symbol(i, "'"), inds(tn; set=:virtual)))
+
+    return tn
+end
+
 """
     align!(a, ioa, b, iob)
 
@@ -65,8 +86,6 @@ macro reindex!(args...)
     :(@reindex!($(args...)))
 end
 
-##### TODO #####
-
 """
     isconnectable(a, b)
 
@@ -76,8 +95,8 @@ Return `true` if two [Pluggable](@ref man-interface-pluggable) Tensor Networks c
  2. The outputs of `a` and `b` are disjoint except for the sites that are connected.
 """
 function isconnectable(a, b)
-    plug.(plugs(a; set=:outputs)) ⊇ plug.(plugs(b; set=:inputs)) && isdisjoint(
-        setdiff(plug.(plugs(a; set=:outputs)), plug.(plugs(b; set=:inputs))),
-        setdiff(plug.(plugs(b; set=:inputs)), plug.(plugs(b; set=:outputs))),
+    plug.(plugs(a; set=:outputs)) ⊇ adjoint.(plug.(plugs(b; set=:inputs))) && isdisjoint(
+        setdiff(plug.(plugs(a; set=:outputs)), adjoint.(plug.(plugs(b; set=:inputs)))),
+        setdiff(plug.(plugs(b; set=:inputs)), adjoint.(plug.(plugs(b; set=:outputs)))),
     )
 end
