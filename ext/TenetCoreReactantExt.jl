@@ -31,9 +31,7 @@ Base.@nospecializeinfer function Reactant.traced_type_inner(
 end
 
 # TODO replace `tensor_id` for `Vertex{UUID}`?
-function Reactant.Compiler.make_tracer(
-    seen, prev::TenetCore.AbstractTensorNetwork, @nospecialize(path), mode; kwargs...
-)
+function Reactant.Compiler.make_tracer(seen, prev::SimpleTensorNetwork, @nospecialize(path), mode; kwargs...)
     traced_tn = copy(prev)
     for (i, tensor) in enumerate(all_tensors(traced_tn))
         traced_tensor = Reactant.Compiler.make_tracer(
@@ -58,7 +56,7 @@ function Reactant.Compiler.create_result(tocopy::SimpleTensorNetwork, @nospecial
     tensormap_results = map(enumerate(tocopy.tensormap)) do (i, (vertex, tensor))
         :(
             $vertex => $(Reactant.Compiler.create_result(
-                tensor, Reactant.append_path(path[end:end], (; tensor_id=i)), result_stores, args...
+                tensor, Reactant.append_path(path, (; tensor_id=i)), result_stores, args...
             ))
         )
     end
@@ -67,12 +65,10 @@ function Reactant.Compiler.create_result(tocopy::SimpleTensorNetwork, @nospecial
     return :($SimpleTensorNetwork($network, $tensormap, $indmap))
 end
 
-Reactant.traced_getfield(x::TenetCore.AbstractTensorNetwork, i::Int) = all_tensors(x)[i]
-function Reactant.traced_getfield(x::TenetCore.AbstractTensorNetwork, fld::@NamedTuple{tensor_id::Int})
-    all_tensors(x)[fld.tensor_id]
-end
+Reactant.traced_getfield(x::SimpleTensorNetwork, i::Int) = all_tensors(x)[i]
+Reactant.traced_getfield(x::SimpleTensorNetwork, fld::@NamedTuple{tensor_id::Int}) = all_tensors(x)[fld.tensor_id]
 
-function Reactant.TracedUtils.push_val!(ad_inputs, x::TenetCore.AbstractTensorNetwork, path)
+function Reactant.TracedUtils.push_val!(ad_inputs, x::SimpleTensorNetwork, path)
     @assert length(path) == 2
     @assert path[2] === :data
 
@@ -81,7 +77,7 @@ function Reactant.TracedUtils.push_val!(ad_inputs, x::TenetCore.AbstractTensorNe
     return push!(ad_inputs, x)
 end
 
-function Reactant.TracedUtils.set!(x::TenetCore.AbstractTensorNetwork, path, tostore; emptypath=false)
+function Reactant.TracedUtils.set!(x::SimpleTensorNetwork, path, tostore; emptypath=false)
     @assert length(path) == 2
     @assert path[2] === :data
 
@@ -93,9 +89,7 @@ function Reactant.TracedUtils.set!(x::TenetCore.AbstractTensorNetwork, path, tos
     end
 end
 
-function Reactant.set_act!(
-    inp::Enzyme.Annotation{TenetCore.AbstractTensorNetwork}, path, reverse, tostore; emptypath=false
-)
+function Reactant.set_act!(inp::Enzyme.Annotation{SimpleTensorNetwork}, path, reverse, tostore; emptypath=false)
     @assert length(path) == 2
     @assert path[2] === :data
 
