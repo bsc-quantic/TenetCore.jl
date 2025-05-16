@@ -24,7 +24,8 @@ Base.@nospecializeinfer function Reactant.traced_type_inner(
     @nospecialize(T::Type{<:TenetCore.AbstractTensorNetwork}),
     seen,
     mode::Reactant.TraceMode,
-    @nospecialize(track_numbers::Type)
+    @nospecialize(track_numbers::Type),
+    args...,
 )
     return T
 end
