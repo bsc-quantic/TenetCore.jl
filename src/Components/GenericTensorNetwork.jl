@@ -45,8 +45,8 @@ nlinks(::@NamedTuple{}, tn::GenericTensorNetwork) = length(tn.linkmap)
 site_vertex(tn::GenericTensorNetwork, site) = tn.sitemap[site]
 link_edge(tn::GenericTensorNetwork, link) = tn.linkmap[link]
 
-vertex_site(tn::GenericTensorNetwork, vertex) = tn.sitemap'[vertex]
-edge_link(tn::GenericTensorNetwork, edge) = tn.linkmap'[edge]
+vertex_site(tn::GenericTensorNetwork, vertex) = inv(tn.sitemap)[vertex]
+edge_link(tn::GenericTensorNetwork, edge) = inv(tn.linkmap)[edge]
 
 ## override to get tensor/index from this level and not from the mixin (which can't)
 # tensor_at(tn::GenericTensorNetwork, tag) = tensor(tn; vertex=site_vertex(tn, tag))

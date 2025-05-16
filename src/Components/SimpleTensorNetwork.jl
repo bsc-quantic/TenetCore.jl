@@ -56,13 +56,13 @@ function SimpleTensorNetwork(tensors; unsafe::Union{Nothing,UnsafeScope}=nothing
 
         # add indices to the network
         for ind in inds(tensor)
-            edge = if !haskey(indmap', ind)
+            edge = if !hasvalue(indmap, ind)
                 edge = Edge(uuid4())
                 addedge!(network, edge)
                 indmap[edge] = ind
                 edge
             else
-                indmap'[ind]
+                inv(indmap)[ind]
             end
 
             Networks.link!(network, vertex, edge)
@@ -94,8 +94,8 @@ checkeffect(::SimpleTensorNetwork, ::AddEdgeEffect) = throw(ErrorException("")) 
 checkeffect(::SimpleTensorNetwork, ::RemoveVertexEffect) = throw(ErrorException("")) # TODO describe the error
 checkeffect(::SimpleTensorNetwork, ::RemoveEdgeEffect) = throw(ErrorException("")) # TODO describe the error
 
-tensor_vertex(tn::SimpleTensorNetwork, tensor::Tensor) = tn.tensormap'[tensor]
-index_edge(tn::SimpleTensorNetwork, index::Index) = tn.indmap'[index]
+tensor_vertex(tn::SimpleTensorNetwork, tensor::Tensor) = inv(tn.tensormap)[tensor]
+index_edge(tn::SimpleTensorNetwork, index::Index) = inv(tn.indmap)[index]
 
 vertex_tensor(tn::SimpleTensorNetwork, vertex) = tn.tensormap[vertex]
 edge_index(tn::SimpleTensorNetwork, edge) = tn.indmap[edge]
@@ -132,8 +132,8 @@ all_tensors_iter(tn::SimpleTensorNetwork) = values(tn.tensormap)
 all_inds(tn::SimpleTensorNetwork) = collect(all_inds_iter(tn))
 all_inds_iter(tn::SimpleTensorNetwork) = values(tn.indmap)
 
-hastensor(tn::SimpleTensorNetwork, tensor) = haskey(tn.tensormap', tensor)
-hasind(tn::SimpleTensorNetwork, index) = haskey(tn.indmap', index)
+hastensor(tn::SimpleTensorNetwork, tensor) = hasvalue(tn.tensormap, tensor)
+hasind(tn::SimpleTensorNetwork, index) = hasvalue(tn.indmap, index)
 
 ntensors(tn::SimpleTensorNetwork) = length(tn.tensormap)
 ninds(tn::SimpleTensorNetwork) = length(tn.indmap)
@@ -185,7 +185,7 @@ function addtensor_inner!(tn::SimpleTensorNetwork, tensor::Tensor)
 
     # link vertex with edges
     for ind in inds(tensor)
-        target_edge = if !haskey(tn.indmap', ind)
+        target_edge = if !hasvalue(tn.indmap, ind)
             target_edge = Edge(uuid4())
             addedge!(tn.network, target_edge)
             tn.indmap[target_edge] = ind
