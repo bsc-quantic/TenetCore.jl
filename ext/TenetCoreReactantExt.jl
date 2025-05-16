@@ -4,6 +4,21 @@ using TenetCore
 using Reactant
 using Reactant: Enzyme
 
+# issue fix: strange behavior between `IdDict` and `Tensor` when using `TracedRArray`... can't figure out why or do a MWE
+function TenetCore.hastensor(tn::SimpleTensorNetwork, tensor::Tensor{<:Reactant.TracedRNumber})
+    any(t -> tensor === t, all_tensors_iter(tn))
+end
+
+function TenetCore.tensor_vertex(tn::SimpleTensorNetwork, tensor::Tensor{<:Reactant.TracedRNumber})
+    for (vertex, mapped_tensor) in tn.tensormap
+        if mapped_tensor === tensor
+            return vertex
+        end
+    end
+
+    throw(ErrorException("Tensor $tensor not found in tensor network but `checkeffect` should have stopped this!"))
+end
+
 # we specify `mode` and `track_numbers` types due to ambiguity
 Base.@nospecializeinfer function Reactant.traced_type_inner(
     @nospecialize(T::Type{<:TenetCore.AbstractTensorNetwork}),
@@ -14,11 +29,12 @@ Base.@nospecializeinfer function Reactant.traced_type_inner(
     return T
 end
 
+# TODO replace `tensor_id` for `Vertex{UUID}`?
 function Reactant.Compiler.make_tracer(
     seen, prev::TenetCore.AbstractTensorNetwork, @nospecialize(path), mode; kwargs...
 )
     traced_tn = copy(prev)
-    for (i, tensor) in enumerate(all_tensors(prev))
+    for (i, tensor) in enumerate(all_tensors(traced_tn))
         traced_tensor = Reactant.Compiler.make_tracer(
             seen, tensor, Reactant.append_path(path, (; tensor_id=i)), mode; kwargs...
         )
@@ -31,12 +47,24 @@ function Reactant.Compiler.make_tracer(
     return traced_tn
 end
 
-# function Reactant.Compiler.create_result(tocopy::TenetCore.AbstractTensorNetwork, @nospecialize(path), result_stores)
-#     elems = map(1:ntensors(tocopy)) do i
-#         Reactant.create_result(tensors(tocopy)[i], Reactant.append_path(path, i), result_stores)
-#     end
-#     return :($TensorNetwork([$(elems...)]))
-# end
+# requires a specialization due to default `create_result` getting confused with `CachedField`
+function Reactant.Compiler.create_result(tocopy::SimpleTensorNetwork, @nospecialize(path), result_stores, args...)
+    network = copy(tocopy.network)
+    indmap = copy(tocopy.indmap)
+
+    # `tensormap` requires special treatment due to the `path` used to store the tensors
+    # TODO refactor the way we mark the path of `tensors` in a `AbstractTensorNetwork`
+    tensormap_results = map(enumerate(tocopy.tensormap)) do (i, (vertex, tensor))
+        :(
+            $vertex => $(Reactant.Compiler.create_result(
+                tensor, Reactant.append_path(path[end:end], (; tensor_id=i)), result_stores, args...
+            ))
+        )
+    end
+    tensormap = :($(typeof(tocopy.tensormap))([$(tensormap_results...)]))
+
+    return :($SimpleTensorNetwork($network, $tensormap, $indmap))
+end
 
 Reactant.traced_getfield(x::TenetCore.AbstractTensorNetwork, i::Int) = all_tensors(x)[i]
 function Reactant.traced_getfield(x::TenetCore.AbstractTensorNetwork, fld::@NamedTuple{tensor_id::Int})
