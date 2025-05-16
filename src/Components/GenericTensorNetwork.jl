@@ -2,6 +2,7 @@ using QuantumTags
 using Serialization
 using Random
 using Base: IdSet
+using BijectiveDicts
 
 const LinkBijection = BijectiveDict{Link,Edge{UUID},Dict{Link,Edge{UUID}},Dict{Edge{UUID},Link}}
 const SiteBijection = BijectiveDict{Site,Vertex{UUID},Dict{Site,Vertex{UUID}},Dict{Vertex{UUID},Site}}

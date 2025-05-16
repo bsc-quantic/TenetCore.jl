@@ -413,8 +413,8 @@ addtensor_inner!(tn, tensor, ::DontDelegate) = throw(MethodError(addtensor_inner
 ## `rmtensor!`
 function rmtensor!(tn, tensor)
     checkeffect(tn, RemoveTensorEffect(tensor))
-    rmtensor_inner!(tn, tensor)
     handle!(tn, RemoveTensorEffect(tensor))
+    rmtensor_inner!(tn, tensor)
     return tn
 end
 
