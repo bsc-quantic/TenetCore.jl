@@ -17,16 +17,24 @@ function hasbond end
 function nsites end
 function nbonds end
 
-# mutating methods
-function set_site_inner! end
-function set_bond_inner! end
-function unset_site_inner! end
-function unset_bond_inner! end
+function tensor_at_site end
+function ind_at_bond end
 
-function set_site! end
-function set_bond! end
-function unset_site! end
-function unset_bond! end
+function site_at_tensor end
+function bond_at_ind end
+
+# mutating methods
+function setsite! end
+function setsite_inner! end
+
+function setbond! end
+function setbond_inner! end
+
+function unsetsite! end
+function unsetsite_inner! end
+
+function unsetbond! end
+function unsetbond_inner! end
 
 # effects
 """
@@ -74,6 +82,7 @@ struct UnsetBondEffect{T} <: Effect
 end
 
 # implementation
+# TODO doesn't this clash with `QuantumTags.sites`?
 sites(tn; kwargs...) = sites(sort_nt(values(kwargs)), tn)
 sites(::@NamedTuple{}, tn) = all_sites(tn)
 
@@ -134,30 +143,30 @@ function nbonds(lattice, ::DontDelegate)
     all_bonds(lattice) |> length
 end
 
-## `set_site_inner!`
-set_site_inner!(lattice, site) = set_site_inner!(lattice, site, DelegatorTrait(Lattice(), lattice))
-set_site_inner!(lattice, site, ::DelegateTo) = set_site_inner!(delegator(Lattice(), lattice), site)
-set_site_inner!(lattice, site, ::DontDelegate) = error("")
+## `tensor_at_site`
+tensor_at_site(lattice, site) = tensor_at_site(lattice, site, DelegatorTrait(Lattice(), lattice))
+tensor_at_site(lattice, site, ::DelegateTo) = tensor_at_site(delegator(Lattice(), lattice), site)
+tensor_at_site(lattice, site, ::DontDelegate) = throw(MethodError(tensor_at_site, (lattice, site)))
 
-## `set_bond_inner!`
-set_bond_inner!(lattice, bond) = set_bond_inner!(lattice, bond, DelegatorTrait(Lattice(), lattice))
-set_bond_inner!(lattice, bond, ::DelegateTo) = set_bond_inner!(delegator(Lattice(), lattice), bond)
-set_bond_inner!(lattice, bond, ::DontDelegate) = error("")
+## `ind_at_bond`
+ind_at_bond(lattice, bond) = ind_at_bond(lattice, bond, DelegatorTrait(Lattice(), lattice))
+ind_at_bond(lattice, bond, ::DelegateTo) = ind_at_bond(delegator(Lattice(), lattice), bond)
+ind_at_bond(lattice, bond, ::DontDelegate) = throw(MethodError(ind_at_bond, (lattice, bond)))
 
-## `unset_site_inner!`
-unset_site_inner!(lattice, site) = unset_site_inner!(lattice, site, DelegatorTrait(Lattice(), lattice))
-unset_site_inner!(lattice, site, ::DelegateTo) = unset_site_inner!(delegator(Lattice(), lattice), site)
-unset_site_inner!(lattice, site, ::DontDelegate) = error("")
+## `site_at_tensor`
+site_at_tensor(lattice, tensor) = site_at_tensor(lattice, tensor, DelegatorTrait(Lattice(), lattice))
+site_at_tensor(lattice, tensor, ::DelegateTo) = site_at_tensor(delegator(Lattice(), lattice), tensor)
+site_at_tensor(lattice, tensor, ::DontDelegate) = throw(MethodError(site_at_tensor, (lattice, tensor)))
 
-## `unset_bond_inner!`
-unset_bond_inner!(lattice, bond) = unset_bond_inner!(lattice, bond, DelegatorTrait(Lattice(), lattice))
-unset_bond_inner!(lattice, bond, ::DelegateTo) = unset_bond_inner!(delegator(Lattice(), lattice), bond)
-unset_bond_inner!(lattice, bond, ::DontDelegate) = error("")
+## `bond_at_ind`
+bond_at_ind(lattice, ind) = bond_at_ind(lattice, ind, DelegatorTrait(Lattice(), lattice))
+bond_at_ind(lattice, ind, ::DelegateTo) = bond_at_ind(delegator(Lattice(), lattice), ind)
+bond_at_ind(lattice, ind, ::DontDelegate) = throw(MethodError(bond_at_ind, (lattice, ind)))
 
-## `set_site!`
-function set_site!(tn, tensor, site)
+## `setsite!`
+function setsite!(tn, tensor, site)
     checkeffect(tn, SetEffect(tensor, site))
-    set_site_inner!(tn, tensor, site)
+    setsite_inner!(tn, tensor, site)
     handle!(tn, SetEffect(tensor, site))
     return tn
 end
@@ -169,10 +178,15 @@ function checkeffect(tn, e::SetSiteEffect, ::DontDelegate)
     hastensor(tn, e.tensor) || throw(ArgumentError("Tensor $(e.tensor) does not exist in the lattice"))
 end
 
-## `set_bond!`
-function set_bond!(tn, tensor, bond)
+## `setsite_inner!`
+setsite_inner!(lattice, site) = setsite_inner!(lattice, site, DelegatorTrait(Lattice(), lattice))
+setsite_inner!(lattice, site, ::DelegateTo) = setsite_inner!(delegator(Lattice(), lattice), site)
+setsite_inner!(lattice, site, ::DontDelegate) = error("")
+
+## `setbond!`
+function setbond!(tn, tensor, bond)
     checkeffect(tn, SetEffect(tensor, bond))
-    set_bond_inner!(tn, tensor, bond)
+    setbond_inner!(tn, tensor, bond)
     handle!(tn, SetEffect(tensor, bond))
     return tn
 end
@@ -184,10 +198,15 @@ function checkeffect(tn, e::SetBondEffect, ::DontDelegate)
     hastensor(tn, e.tensor) || throw(ArgumentError("Tensor $(e.tensor) does not exist in the lattice"))
 end
 
-## `unset_site!`
-function unset_site!(tn, site)
+## `setbond_inner!`
+setbond_inner!(lattice, bond) = setbond_inner!(lattice, bond, DelegatorTrait(Lattice(), lattice))
+setbond_inner!(lattice, bond, ::DelegateTo) = setbond_inner!(delegator(Lattice(), lattice), bond)
+setbond_inner!(lattice, bond, ::DontDelegate) = error("")
+
+## `unsetsite!`
+function unsetsite!(tn, site)
     checkeffect(tn, UnsetEffect(site))
-    unset_site_inner!(tn, site)
+    unsetsite_inner!(tn, site)
     handle!(tn, UnsetEffect(site))
     return tn
 end
@@ -198,10 +217,15 @@ function checkeffect(tn, e::UnsetSiteEffect, ::DontDelegate)
     hassite(tn, e.site) || throw(ArgumentError("Lattice does not contain site $(e.site)"))
 end
 
-## `unset_bond!`
-function unset_bond!(tn, bond)
+## `unsetsite_inner!`
+unsetsite_inner!(lattice, site) = unsetsite_inner!(lattice, site, DelegatorTrait(Lattice(), lattice))
+unsetsite_inner!(lattice, site, ::DelegateTo) = unsetsite_inner!(delegator(Lattice(), lattice), site)
+unsetsite_inner!(lattice, site, ::DontDelegate) = error("")
+
+## `unsetbond!`
+function unsetbond!(tn, bond)
     checkeffect(tn, UnsetEffect(bond))
-    unset_bond_inner!(tn, bond)
+    unsetbond_inner!(tn, bond)
     handle!(tn, UnsetEffect(bond))
     return tn
 end
@@ -211,3 +235,8 @@ checkeffect(tn, e::UnsetBondEffect, ::DelegateTo) = checkeffect(delegator(Lattic
 function checkeffect(tn, e::UnsetBondEffect, ::DontDelegate)
     hasbond(tn, e.bond) || throw(ArgumentError("Lattice does not contain bond $(e.bond)"))
 end
+
+## `unsetbond_inner!`
+unsetbond_inner!(lattice, bond) = unsetbond_inner!(lattice, bond, DelegatorTrait(Lattice(), lattice))
+unsetbond_inner!(lattice, bond, ::DelegateTo) = unsetbond_inner!(delegator(Lattice(), lattice), bond)
+unsetbond_inner!(lattice, bond, ::DontDelegate) = error("")
