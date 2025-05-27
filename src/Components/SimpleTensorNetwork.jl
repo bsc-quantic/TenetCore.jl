@@ -3,13 +3,13 @@ using Networks
 using Networks: Vertex, Edge, AddVertexEffect, RemoveVertexEffect, AddEdgeEffect, RemoveEdgeEffect, vertex, edge
 using QuantumTags
 using Muscle: ImmutableVector
-using BijectiveDicts: BijectiveDict, BijectiveIdDict
+using Bijections
 using Serialization
 using Random
 using Base: IdSet
 
-const TensorBijection{V,T} = BijectiveDict{V,T,Dict{V,T},IdDict{T,V}}
-const IndexBijection{E,I} = BijectiveDict{E,I,Dict{E,I},Dict{I,E}}
+const TensorBijection{V,T} = Bijection{V,T,Dict{V,T},IdDict{T,V}}
+const IndexBijection{E,I} = Bijection{E,I,Dict{E,I},Dict{I,E}}
 
 struct SimpleTensorNetwork <: AbstractTensorNetwork
     network::IncidentNetwork{Vertex{UUID},Edge{UUID}}

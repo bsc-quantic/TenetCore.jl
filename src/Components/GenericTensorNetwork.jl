@@ -2,10 +2,10 @@ using QuantumTags
 using Serialization
 using Random
 using Base: IdSet
-using BijectiveDicts
+using Bijections
 
-const LinkBijection = BijectiveDict{Link,Edge{UUID},Dict{Link,Edge{UUID}},Dict{Edge{UUID},Link}}
-const SiteBijection = BijectiveDict{Site,Vertex{UUID},Dict{Site,Vertex{UUID}},Dict{Vertex{UUID},Site}}
+const LinkBijection = Bijection{Link,Edge{UUID},Dict{Link,Edge{UUID}},Dict{Edge{UUID},Link}}
+const SiteBijection = Bijection{Site,Vertex{UUID},Dict{Site,Vertex{UUID}},Dict{Vertex{UUID},Site}}
 
 struct GenericTensorNetwork <: AbstractTensorNetwork
     tn::SimpleTensorNetwork

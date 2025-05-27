@@ -5,7 +5,7 @@ version = "0.3.2"
 
 [deps]
 ArgCheck = "dce04be8-c92d-5529-be00-80e4d2c0e197"
-BijectiveDicts = "d089a002-103b-496c-a4e3-58f90cf955b0"
+Bijections = "e2ed5e7c-b2de-5872-ae92-c73ca462fb04"
 Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
 EinExprs = "b1794770-133b-4de1-afb4-526377e9f4c5"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
@@ -36,7 +36,7 @@ TenetCoreReactantExt = ["Reactant"]
 [compat]
 Adapt = "4"
 ArgCheck = "2.5.0"
-BijectiveDicts = "0.3.2"
+Bijections = "0.2.1"
 Compat = "4.16.0"
 EinExprs = "0.6.8"
 FiniteDifferences = "0.12"
