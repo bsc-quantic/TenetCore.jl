@@ -10,7 +10,7 @@ function Adapt.adapt_structure(to, x::TenetCore.AbstractTensorNetwork)
     y = copy(x)
 
     for tensor in all_tensors(y)
-        replace_tensor!(y, tensor => adapt(to, tensor))
+        replace_tensor!(y, tensor, adapt(to, tensor))
     end
 
     return y
