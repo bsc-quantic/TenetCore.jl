@@ -35,7 +35,7 @@ DelegatorTrait(::UnsafeScopeable, ::GenericTensorNetwork) = DelegateToField{:tn}
 DelegatorTrait(::TensorNetwork, ::GenericTensorNetwork) = DelegateToField{:tn}()
 
 tensor_at(tn::GenericTensorNetwork, site::Site) = tensor_at(tn, vertex_at(tn, site))
-ind_at(tn::GenericTensorNetwork, bond::Bond) = ind_at(tn, edge_at(tn, bond))
+ind_at(tn::GenericTensorNetwork, link::Link) = ind_at(tn, edge_at(tn, link))
 
 function rmtensor!(tn::GenericTensorNetwork, tensor)
     # it can break the mapping, so untag if the removed tensor is tagged
