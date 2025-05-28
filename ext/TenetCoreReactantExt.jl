@@ -9,7 +9,7 @@ function TenetCore.hastensor(tn::SimpleTensorNetwork, tensor::Tensor{<:Reactant.
     any(t -> tensor === t, all_tensors_iter(tn))
 end
 
-function TenetCore.vertex_at_tensor(tn::SimpleTensorNetwork, tensor::Tensor{<:Reactant.TracedRNumber})
+function TenetCore.vertex_at(tn::SimpleTensorNetwork, tensor::Tensor{<:Reactant.TracedRNumber})
     for (vertex, mapped_tensor) in tn.tensormap
         if mapped_tensor === tensor
             return vertex

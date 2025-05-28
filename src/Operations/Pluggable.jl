@@ -4,13 +4,13 @@ function adjoint_plugs!(tn)
     mapping = Dict(plug => ind(tn; at=plug) for plug in all_plugs(tn))
 
     # remove sites preemptively to avoid issues on renaming
-    for plug_tag in all_plugs(tn)
-        untag!(tn, plug_tag)
+    for _plug in all_plugs(tn)
+        unsetplug!(tn, _plug)
     end
 
     # set new site mapping
-    for (site, index) in mapping
-        tag!(tn, index, site')
+    for (_plug, index) in mapping
+        setplug!(tn, index, _plug')
     end
 
     # rename inner indices

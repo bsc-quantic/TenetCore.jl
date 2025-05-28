@@ -17,10 +17,10 @@ function all_plugs_iter end
 function hasplug end
 function nplugs end
 
+function plug_at end
+
 function plugs_like end
 function plug_like end
-function ind_at_plug end
-# function plug_at end
 
 function plugs_set end
 function plugs_set_inputs end
@@ -72,8 +72,14 @@ nplugs(tn) = nplugs(tn, DelegatorTrait(Pluggable(), tn))
 nplugs(tn, ::DelegateToField) = nplugs(delegator(Pluggable(), tn))
 function nplugs(tn, ::DontDelegate)
     fallback(nplugs)
-    length(all_plugs_iter(tn))
+    length(all_plugs(tn))
 end
+
+## `plug_at`
+plug_at(tn, plug) = plug_at(tn, plug, DelegatorTrait(Pluggable(), tn))
+plug_at(tn, plug, ::DelegateToField) = plug_at(delegator(Pluggable(), tn), plug)
+plut_at(tn, plug, ::DontDelegate) = throw(MethodError(plug_at, (tn, plug)))
+# plug_at(tn, plug) = first(Iterators.filter(Base.Fix1(is_plug_equal, plug), all_links_iter(tn)))
 
 ## `plugs_like`
 plugs_like(tn, plug) = plugs_like(tn, plug, DelegatorTrait(Pluggable(), tn))
@@ -90,17 +96,6 @@ function plug_like(tn, plug, ::DontDelegate)
     fallback(plug_like)
     first(Iterators.filter(Base.Fix1(is_plug_equal, plug), all_plugs_iter(tn)))
 end
-
-## `ind_at_plug`
-ind_at_plug(tn, plug) = ind_at_plug(tn, plug, DelegatorTrait(Pluggable(), tn))
-ind_at_plug(tn, plug, ::DelegateToField) = ind_at_plug(delegator(Pluggable(), tn), plug)
-ind_at_plug(tn, plug, ::DontDelegate) = throw(MethodError(ind_at_plug, (tn, plug)))
-
-### alias
-ind(kwargs::NamedTuple{(:plug,)}, tn) = ind_at_plug(tn, kwargs.plug)
-
-## `plug_at`
-# plug_at(tn, plug) = first(Iterators.filter(Base.Fix1(is_plug_equal, plug), all_links_iter(tn)))
 
 ## `plugs_set`
 @valsplit plugs_set(tn, Val(set::Symbol)) = throw(ArgumentError("invalid `set` values: $(set)"))
@@ -130,7 +125,7 @@ inds_set_physical(tn) = inds_set_physical(tn, DelegatorTrait(Pluggable(), tn))
 inds_set_physical(tn, ::DelegateToField) = inds_set_physical(delegator(Pluggable(), tn))
 function inds_set_physical(tn, ::DontDelegate)
     fallback(inds_set_physical)
-    Index[ind_at_plug(tn, i) for i in all_plugs(tn)]
+    Index[ind_at(tn, i) for i in all_plugs(tn)]
 end
 
 inds_set(tn, ::Val{:virtual}) = inds_set_virtual(tn)
@@ -146,7 +141,7 @@ inds_set_inputs(tn) = inds_set_inputs(tn, DelegatorTrait(Pluggable(), tn))
 inds_set_inputs(tn, ::DelegateToField) = inds_set_inputs(delegator(Pluggable(), tn))
 function inds_set_inputs(tn, ::DontDelegate)
     fallback(inds_set_inputs)
-    Index[ind_at_plug(tn, i) for i in plugs_set_inputs(tn)]
+    Index[ind_at(tn, i) for i in plugs_set_inputs(tn)]
 end
 
 inds_set(tn, ::Val{:outputs}) = inds_set_outputs(tn)
@@ -154,7 +149,7 @@ inds_set_outputs(tn) = inds_set_outputs(tn, DelegatorTrait(Pluggable(), tn))
 inds_set_outputs(tn, ::DelegateToField) = inds_set_outputs(delegator(Pluggable(), tn))
 function inds_set_outputs(tn, ::DontDelegate)
     fallback(inds_set_outputs)
-    Index[ind_at_plug(tn, i) for i in plugs_set_outputs(tn)]
+    Index[ind_at(tn, i) for i in plugs_set_outputs(tn)]
 end
 
 ## `setplug!`

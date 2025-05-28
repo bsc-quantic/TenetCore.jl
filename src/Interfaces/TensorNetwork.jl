@@ -48,12 +48,8 @@ function inds_parallel_to end
 function size_inds end
 function size_ind end
 
-# TODO move to other interface
-## TensorNetwork + Network
-function vertex_at_tensor end
-function edge_at_ind end
-function tensor_at_vertex end
-function ind_at_edge end
+function tensor_at end
+function ind_at end
 
 # mutating methods
 function addtensor! end
@@ -95,7 +91,7 @@ tensors(kwargs::NamedTuple{(:withinds,)}, tn) = tensors_with_inds(tn, kwargs.wit
 ### singular version of `tensors`
 tensor(tn; kwargs...) = tensor(sort_nt(values(kwargs)), tn)
 tensor(kwargs::NamedTuple, tn) = only(tensors(kwargs, tn))
-tensor(kwargs::@NamedTuple{vertex::V}, tn) where {V} = tensor_at_vertex(tn, kwargs.vertex)
+tensor(kwargs::NamedTuple{(:at,)}, tn) = tensor_at(tn, kwargs.at)
 
 ## `inds`
 inds(tn; kwargs...) = inds(sort_nt(values(kwargs)), tn)
@@ -107,7 +103,7 @@ inds(kwargs::NamedTuple{(:parallelto,)}, tn) = inds_parallel_to(tn, kwargs.paral
 ### singular version of `inds`
 ind(tn; kwargs...) = ind(sort_nt(values(kwargs)), tn)
 ind(kwargs::NamedTuple, tn) = only(inds(kwargs, tn))
-ind(kwargs::@NamedTuple{edge::E}, tn) where {E} = ind_at_edge(tn, kwargs.edge)
+ind(kwargs::NamedTuple{(:at,)}, tn) = ind_at(tn, kwargs.at)
 
 ## `all_tensors`
 all_tensors(tn) = all_tensors(tn, DelegatorTrait(TensorNetwork(), tn))
@@ -275,46 +271,14 @@ function size_ind(tn, i, ::DontDelegate)
     return size(first(_tensors), i)
 end
 
-## `vertex_at_tensor`
-vertex_at_tensor(tn, tensor) = vertex_at_tensor(tn, tensor, DelegatorTrait(TensorNetwork(), tn))
-vertex_at_tensor(tn, tensor, ::DelegateToField) = vertex_at_tensor(delegator(TensorNetwork(), tn), tensor)
-function vertex_at_tensor(tn, tensor, ::DontDelegate)
-    fallback(vertex_at_tensor)
-    @argcheck hastensor(tn, tensor) "tensor $tensor not found in the Tensor Network"
-    if vertex_type(tn) >: Tensor
-        return Vertex(tensor)
-    else
-        throw(MethodError(vertex_at_tensor, (tn, tensor)))
-    end
-end
+## `tensor_at`
+tensor_at(tn, tensor) = tensor_at(tn, tensor, DelegatorTrait(TensorNetwork(), tn))
+tensor_at(tn, tensor, ::DelegateToField) = tensor_at(delegator(TensorNetwork(), tn), tensor)
 
-## `edge_at_ind`
-edge_at_ind(tn, index) = edge_at_ind(tn, index, DelegatorTrait(TensorNetwork(), tn))
-edge_at_ind(tn, index, ::DelegateToField) = edge_at_ind(delegator(TensorNetwork(), tn), index)
-function edge_at_ind(tn, index, ::DontDelegate)
-    fallback(edge_at_ind)
-    @argcheck hasind(tn, index) "index $index not found in the Tensor Network"
-    if edge_type(tn) >: Index
-        return Edge(index)
-    else
-        throw(MethodError(edge_at_ind, (tn, index)))
-    end
-end
-
-## `tensor_at_vertex`
-tensor_at_vertex(tn, vertex) = tensor_at_vertex(tn, vertex, DelegatorTrait(TensorNetwork(), tn))
-tensor_at_vertex(tn, vertex, ::DelegateToField) = tensor_at_vertex(delegator(TensorNetwork(), tn), vertex)
-tensor_at_vertex(tn, vertex, ::DontDelegate) = throw(MethodError(tensor_at_vertex, (tn, vertex)))
-
-## `ind_at_edge`
-ind_at_edge(tn, edge) = ind_at_edge(tn, edge, DelegatorTrait(TensorNetwork(), tn))
-ind_at_edge(tn, edge, ::DelegateToField) = ind_at_edge(delegator(TensorNetwork(), tn), edge)
-ind_at_edge(tn, edge, ::DontDelegate) = throw(MethodError(ind_at_edge, (tn, edge)))
-
-### helper methods
-# TODO THIS IS PIRACY! we should move it to `AbstractTensorNetwork.jl`
-Networks.vertex(tn, tensor::Tensor) = vertex_at_tensor(tn, tensor)
-Networks.edge(tn, index::Index) = edge_at_ind(tn, index)
+## `ind_at`
+ind_at(tn, index) = ind_at(tn, index, DelegatorTrait(TensorNetwork(), tn))
+ind_at(tn, index, ::DelegateToField) = ind_at(delegator(TensorNetwork(), tn), index)
+ind_at(tn, index, ::DontDelegate) = throw(MethodError(ind_at, (tn, index)))
 
 # `addtensor!`
 # TODO check that tensor is not already present
@@ -353,7 +317,7 @@ slice!(tn, ind, i) = slice!(tn, ind, i, DelegatorTrait(TensorNetwork(), tn))
 slice!(tn, ind, i, ::DelegateToField) = slice!(delegator(TensorNetwork(), tn), ind, i)
 function slice!(tn, ind, i, ::DontDelegate)
     hasind(tn, ind) || throw(ArgumentError("Index $ind not found in tensor network"))
-    target_edge = edge(tn, ind)
+    target_edge = edge_at(tn, ind)
 
     # update tensors
     for old_tensor in tensors(tn; contain=ind)

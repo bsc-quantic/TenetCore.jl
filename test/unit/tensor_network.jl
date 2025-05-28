@@ -1,5 +1,6 @@
 using Test
 using TenetCore
+using DelegatorTraits
 using Serialization
 
 struct MockTensorNetwork <: TenetCore.AbstractTensorNetwork
@@ -28,42 +29,38 @@ end
 
 TenetCore.all_tensors(tn::MockTensorNetwork) = collect(tn.tensors)
 
-function TenetCore.addtensor_inner!(tn::MockTensorNetwork, tensor::Tensor)
-    if hastensor(tn, tensor)
-        throw(ArgumentError("tensor already exists in the network"))
-    end
+function TenetCore.addtensor!(tn::MockTensorNetwork, tensor::Tensor)
+    hastensor(tn, tensor) && throw(ArgumentError("tensor already exists in the network"))
     push!(tn.tensors, tensor)
     return tn
 end
 
-function TenetCore.rmtensor_inner!(tn::MockTensorNetwork, tensor::Tensor)
-    if !hastensor(tn, tensor)
-        throw(ArgumentError("tensor not found in the network"))
-    end
+function TenetCore.rmtensor!(tn::MockTensorNetwork, tensor::Tensor)
+    !hastensor(tn, tensor) && throw(ArgumentError("tensor not found in the network"))
     deleteat!(tn.tensors, findfirst(x -> x === tensor, tn.tensors))
     return tn
 end
 
-function TenetCore.replace_tensor_inner!(tn::MockTensorNetwork, old_tensor, new_tensor)
+function TenetCore.replace_tensor!(tn::MockTensorNetwork, old_tensor, new_tensor)
     old_tensor === new_tensor && return tn
 
-    TenetCore.rmtensor_inner!(tn, old_tensor)
-    TenetCore.addtensor_inner!(tn, new_tensor)
+    TenetCore.rmtensor!(tn, old_tensor)
+    TenetCore.addtensor!(tn, new_tensor)
 end
 
-function TenetCore.replace_ind_inner!(tn::MockTensorNetwork, old_ind, new_ind)
+function TenetCore.replace_ind!(tn::MockTensorNetwork, old_ind, new_ind)
     old_ind == new_ind && return tn
 
     for old_tensor in tensors_contain_inds(tn, old_ind)
         new_tensor = replace(old_tensor, old_ind => new_ind)
-        TenetCore.replace_tensor_inner!(tn, old_tensor, new_tensor)
+        TenetCore.replace_tensor!(tn, old_tensor, new_tensor)
     end
 end
 
-function TenetCore.slice_inner!(tn::MockTensorNetwork, ind, i)
+function TenetCore.slice!(tn::MockTensorNetwork, ind, i)
     for old_tensor in tensors(tn; contain=ind)
         new_tensor = selectdim(old_tensor, ind, i)
-        TenetCore.replace_tensor_inner!(tn, old_tensor, new_tensor)
+        TenetCore.replace_tensor!(tn, old_tensor, new_tensor)
     end
     return tn
 end
@@ -73,8 +70,8 @@ struct WrapperTensorNetwork{T} <: TenetCore.AbstractTensorNetwork
 end
 
 Base.copy(tn::WrapperTensorNetwork) = WrapperTensorNetwork(copy(tn.tn))
-TenetCore.DelegatorTrait(::TenetCore.UnsafeScopeable, ::WrapperTensorNetwork) = TenetCore.DelegateTo{:tn}()
-TenetCore.DelegatorTrait(::TenetCore.TensorNetwork, ::WrapperTensorNetwork) = TenetCore.DelegateTo{:tn}()
+DelegatorTraits.DelegatorTrait(::TenetCore.UnsafeScopeable, ::WrapperTensorNetwork) = DelegateToField{:tn}()
+DelegatorTraits.DelegatorTrait(::TenetCore.TensorNetwork, ::WrapperTensorNetwork) = DelegateToField{:tn}()
 
 test_tensors = [
     Tensor(rand(ComplexF64, 2, 3), Index.([:i, :j])),

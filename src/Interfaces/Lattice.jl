@@ -27,18 +27,8 @@ function hasbond end
 function nsites end
 function nbonds end
 
-# TODO move to Lattice + Network
-function site_at_vertex end
-function bond_at_edge end
-function vertex_at_site end
-function edge_at_bond end
-
-# TODO move to Lattice + TensorNetwork
-function tensor_at_site end
-function ind_at_bond end
-
-function site_at_tensor end
-function bond_at_ind end
+function site_at end
+function bond_at end
 
 # mutating methods
 function setsite! end
@@ -107,7 +97,7 @@ nsites(lattice) = nsites(lattice, DelegatorTrait(Lattice(), lattice))
 nsites(lattice, ::DelegateToField) = nsites(delegator(Lattice(), lattice))
 function nsites(lattice, ::DontDelegate)
     fallback(nsites)
-    all_sites_iter(lattice) |> length
+    all_sites(lattice) |> length
 end
 
 ## `nbonds`
@@ -115,28 +105,18 @@ nbonds(lattice) = nbonds(lattice, DelegatorTrait(Lattice(), lattice))
 nbonds(lattice, ::DelegateToField) = nbonds(delegator(Lattice(), lattice))
 function nbonds(lattice, ::DontDelegate)
     fallback(nbonds)
-    all_bonds_iter(lattice) |> length
+    all_bond(lattice) |> length
 end
 
-## `tensor_at_site`
-tensor_at_site(lattice, site) = tensor_at_site(lattice, site, DelegatorTrait(Lattice(), lattice))
-tensor_at_site(lattice, site, ::DelegateToField) = tensor_at_site(delegator(Lattice(), lattice), site)
-tensor_at_site(lattice, site, ::DontDelegate) = throw(MethodError(tensor_at_site, (lattice, site)))
+## `site_at`
+site_at(lattice, tag) = site_at(lattice, tag, DelegatorTrait(Lattice(), lattice))
+site_at(lattice, tag, ::DelegateToField) = site_at(delegator(Lattice(), lattice), tag)
+site_at(lattice, tag, ::DontDelegate) = throw(MethodError(site_at, (lattice, tag)))
 
-## `ind_at_bond`
-ind_at_bond(lattice, bond) = ind_at_bond(lattice, bond, DelegatorTrait(Lattice(), lattice))
-ind_at_bond(lattice, bond, ::DelegateToField) = ind_at_bond(delegator(Lattice(), lattice), bond)
-ind_at_bond(lattice, bond, ::DontDelegate) = throw(MethodError(ind_at_bond, (lattice, bond)))
-
-## `site_at_tensor`
-site_at_tensor(lattice, tensor) = site_at_tensor(lattice, tensor, DelegatorTrait(Lattice(), lattice))
-site_at_tensor(lattice, tensor, ::DelegateToField) = site_at_tensor(delegator(Lattice(), lattice), tensor)
-site_at_tensor(lattice, tensor, ::DontDelegate) = throw(MethodError(site_at_tensor, (lattice, tensor)))
-
-## `bond_at_ind`
-bond_at_ind(lattice, ind) = bond_at_ind(lattice, ind, DelegatorTrait(Lattice(), lattice))
-bond_at_ind(lattice, ind, ::DelegateToField) = bond_at_ind(delegator(Lattice(), lattice), ind)
-bond_at_ind(lattice, ind, ::DontDelegate) = throw(MethodError(bond_at_ind, (lattice, ind)))
+## `bond_at`
+bond_at(lattice, tag) = bond_at(lattice, tag, DelegatorTrait(Lattice(), lattice))
+bond_at(lattice, tag, ::DelegateToField) = bond_at(delegator(Lattice(), lattice), tag)
+bond_at(lattice, tag, ::DontDelegate) = throw(MethodError(bond_at, (lattice, tag)))
 
 ## `setsite!`
 # TODO check that the site does not exist and that the tensor exists

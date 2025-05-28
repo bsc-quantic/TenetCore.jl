@@ -1,5 +1,6 @@
 [deps]
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
+DelegatorTraits = "d83dbd90-3e00-4b33-84f1-398adcf3b35e"
 Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
 Muscle = "21fe5c4b-a943-414d-bf3e-516f24900631"
 Networks = "634dcf3f-6aa7-47ba-9e85-1fb329c9ebfe"
