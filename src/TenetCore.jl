@@ -15,12 +15,8 @@ import EinExprs: inds
 
 include("Utils.jl")
 
-@reexport using Networks
-import Networks: Interface
-import Networks: DelegatorTrait, DontDelegate, DelegateTo, delegator
-import Networks: ImplementorTrait, NotImplements, Implements
-import Networks: Effect, checkeffect, handle!
-using Networks: fallback
+using DelegatorTraits
+import DelegatorTraits: DelegatorTrait, ImplementorTrait, Implements, NotImplements
 
 # NOTE for developers
 # try using functions owned by us (e.g. `mysize` instead of `Base.size`)
@@ -36,13 +32,12 @@ export tensors_with_inds, tensors_contain_inds, tensors_intersect_inds
 export inds_set, inds_parallel_to
 export size_inds, size_ind
 
-include("Interfaces/Taggable.jl")
-# include("Interfaces/Lattice.jl")
-@compat public Taggable
+include("Interfaces/Lattice.jl")
+@compat public Lattice
 export sites, site, hassite, nsites, all_sites, sites_like, site_like
-export links, link, haslink, nlinks, all_links, links_like, link_like
-export tensor_at, ind_at, site_at, link_at, size_link
-export tag!, untag!, replace_tag!
+export bonds, bond, hasbond, nbonds, all_bonds, bonds_like, bond_like
+export tensor_at_site, ind_at_bond, site_at_tensor, bond_at
+export setsite!, setbond!, unsetsite!, unsetbond!
 
 include("Interfaces/Pluggable.jl")
 @compat public Pluggable

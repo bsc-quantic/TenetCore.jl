@@ -1,3 +1,5 @@
+using EinExprs
+
 abstract type AbstractTensorNetwork end
 
 # TensorNetwork interface
