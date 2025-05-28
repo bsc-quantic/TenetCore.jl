@@ -160,7 +160,7 @@ test_tagged_tn = GenericTensorNetwork(
 
     @testset "tag_vertex!" begin
         @testset let test_tn = copy(test_tn)
-            tag_vertex!(test_tn, vertex_at(test_tensors[3]), site"3")
+            tag_vertex!(test_tn, vertex_at(test_tn, test_tensors[3]), site"3")
             @test tensor_at(test_tn, site"3") === test_tensors[3]
         end
 
