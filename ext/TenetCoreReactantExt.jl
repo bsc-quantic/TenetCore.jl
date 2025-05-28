@@ -47,22 +47,74 @@ function Reactant.Compiler.make_tracer(seen, prev::SimpleTensorNetwork, @nospeci
 end
 
 # requires a specialization due to default `create_result` getting confused with `CachedField`
-function Reactant.Compiler.create_result(tocopy::SimpleTensorNetwork, @nospecialize(path), result_stores, args...)
-    network = copy(tocopy.network)
-    indmap = copy(tocopy.indmap)
+function Reactant.Compiler.create_result(
+    tocopy::SimpleTensorNetwork,
+    @nospecialize(path),
+    result_stores,
+    path_to_shard_info,
+    to_unreshard_results,
+    unresharded_code::Vector{Expr},
+    unresharded_arrays_cache,
+    used_shardinfo,
+    result_cache,
+    var_idx,
+    resultgen_code,
+)
+    expr_network = Reactant.Compiler.create_result(
+        tocopy.network,
+        Reactant.append_path(path, :network),
+        result_stores,
+        path_to_shard_info,
+        to_unreshard_results,
+        unresharded_code,
+        unresharded_arrays_cache,
+        used_shardinfo,
+        result_cache,
+        var_idx,
+        resultgen_code,
+    )
+
+    expr_indmap = Reactant.Compiler.create_result(
+        tocopy.indmap,
+        Reactant.append_path(path, :indmap),
+        result_stores,
+        path_to_shard_info,
+        to_unreshard_results,
+        unresharded_code,
+        unresharded_arrays_cache,
+        used_shardinfo,
+        result_cache,
+        var_idx,
+        resultgen_code,
+    )
 
     # `tensormap` requires special treatment due to the `path` used to store the tensors
     # TODO refactor the way we mark the path of `tensors` in a `AbstractTensorNetwork`
     tensormap_results = map(enumerate(tocopy.tensormap)) do (i, (vertex, tensor))
         :(
             $vertex => $(Reactant.Compiler.create_result(
-                tensor, Reactant.append_path(path, (; tensor_id=i)), result_stores, args...
+                tensor,
+                Reactant.append_path(path, (; tensor_id=i)),
+                result_stores,
+                path_to_shard_info,
+                to_unreshard_results,
+                unresharded_code,
+                unresharded_arrays_cache,
+                used_shardinfo,
+                result_cache,
+                var_idx,
+                resultgen_code,
             ))
         )
     end
-    tensormap = :($(typeof(tocopy.tensormap))([$(tensormap_results...)]))
+    expr_tensormap = :($(typeof(tocopy.tensormap))([$(tensormap_results...)]))
 
-    return :($SimpleTensorNetwork($network, $tensormap, $indmap))
+    return quote
+        network = $expr_network
+        tensormap = $expr_tensormap
+        indmap = $expr_indmap
+        $SimpleTensorNetwork(network, tensormap, indmap)
+    end
 end
 
 Reactant.traced_getfield(x::SimpleTensorNetwork, i::Int) = all_tensors(x)[i]
