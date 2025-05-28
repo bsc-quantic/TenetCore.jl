@@ -1,7 +1,6 @@
 module TenetCore
 
 using Reexport
-using Compat
 
 import EinExprs: inds
 
@@ -17,11 +16,12 @@ include("Utils.jl")
 
 using DelegatorTraits
 import DelegatorTraits: DelegatorTrait, ImplementorTrait, Implements, NotImplements
+using DelegatorTraits: @public
 
 # NOTE for developers
 # try using functions owned by us (e.g. `mysize` instead of `Base.size`)
 include("Interfaces/UnsafeScope.jl")
-@compat public UnsafeScopeable
+@public UnsafeScopeable
 export @unsafe_region
 
 include("Interfaces/TensorNetwork.jl")
@@ -34,13 +34,13 @@ export inds_set, inds_parallel_to
 export size_inds, size_ind
 
 include("Interfaces/Lattice.jl")
-@compat public Lattice
+@public Lattice
 export sites, site, site_at, hassite, nsites, all_sites, sites_like, site_like
 export bonds, bond, bond_at, hasbond, nbonds, all_bonds, bonds_like, bond_like
 export setsite!, setbond!, unsetsite!, unsetbond!
 
 include("Interfaces/Pluggable.jl")
-@compat public Pluggable
+@public Pluggable
 export plugs,
     plug,
     plug_at,
