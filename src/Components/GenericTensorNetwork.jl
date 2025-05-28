@@ -75,19 +75,23 @@ Networks.has_edge_tag(tn::GenericTensorNetwork, tag) = haskey(tn.linkmap, tag)
 Networks.tag_at_vertex(tn::GenericTensorNetwork, vertex::Vertex) = tn.sitemap(vertex)
 Networks.tag_at_edge(tn::GenericTensorNetwork, edge::Edge) = tn.linkmap(edge)
 
-function Networks.tag_vertex!(tn::GenericTensorNetwork, vertex, site)
+function Networks.tag_vertex!(tn::GenericTensorNetwork, vertex::Vertex, site)
     hasvertex(tn, vertex) || throw(ArgumentError("Vertex $vertex not found in tensor network."))
     has_vertex_tag(tn, site) && throw(ArgumentError("Vertex tag $site already tagged in tensor network."))
     tn.sitemap[site] = vertex
     return tn
 end
 
-function Networks.tag_edge!(tn::GenericTensorNetwork, edge, link)
+Networks.tag_vertex!(tn::GenericTensorNetwork, tensor::Tensor, site) = tag_vertex!(tn, vertex_at(tn, tensor), site)
+
+function Networks.tag_edge!(tn::GenericTensorNetwork, edge::Edge, link)
     hasedge(tn, edge) || throw(ArgumentError("Edge $edge not found in tensor network."))
     has_edge_tag(tn, link) && throw(ArgumentError("Edge tag $link already tagged in tensor network."))
     tn.linkmap[link] = edge
     return tn
 end
+
+Networks.tag_edge!(tn::GenericTensorNetwork, ind::Index, link) = tag_edge!(tn, edge_at(tn, ind), link)
 
 function Networks.untag_vertex!(tn::GenericTensorNetwork, site)
     has_vertex_tag(tn, site) || throw(ArgumentError("Vertex tag $site not found in tensor network."))
