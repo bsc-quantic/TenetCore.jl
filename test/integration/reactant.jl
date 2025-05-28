@@ -3,7 +3,7 @@ using TenetCore
 using Reactant
 using Adapt
 using Enzyme
-using TenetCore: vertex_tensor, tensor_vertex
+using Networks
 
 # TODO test `make_tracer`
 # TODO test `create_result`
@@ -30,6 +30,6 @@ end
     grad_contract(x) = Enzyme.gradient(Reverse, contract, x)
 
     (grad_tn,) = @jit grad_contract(tn_re)
-    @test vertex_tensor(grad_tn, tensor_vertex(tn, A)) ≈ B
-    @test vertex_tensor(grad_tn, tensor_vertex(tn, B)) ≈ A
+    @test tensor_at(grad_tn, vertex_at(tn, A)) ≈ B
+    @test tensor_at(grad_tn, vertex_at(tn, B)) ≈ A
 end

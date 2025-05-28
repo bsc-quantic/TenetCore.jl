@@ -1,5 +1,6 @@
 using Test
 using TenetCore
+using Networks
 
 # 2-site state
 fixture1 = let
@@ -8,9 +9,9 @@ fixture1 = let
     constructor = () -> begin
         tn = GenericTensorNetwork([a, b])
 
-        tag!(tn, Index(:i), plug"1")
-        tag!(tn, Index(:j), bond"1-2")
-        tag!(tn, Index(:k), plug"2")
+        tag_edge!(tn, edge_at(tn, Index(:i)), plug"1")
+        tag_edge!(tn, edge_at(tn, Index(:j)), bond"1-2")
+        tag_edge!(tn, edge_at(tn, Index(:k)), plug"2")
 
         return tn
     end
@@ -25,9 +26,9 @@ fixture2 = let
     constructor = () -> begin
         tn = GenericTensorNetwork([a, b])
 
-        tag!(tn, Index(:i), plug"1")
-        tag!(tn, Index(:j), bond"1-2")
-        tag!(tn, Index(:k), plug"2'")
+        tag_edge!(tn, edge_at(tn, Index(:i)), plug"1")
+        tag_edge!(tn, edge_at(tn, Index(:j)), bond"1-2")
+        tag_edge!(tn, edge_at(tn, Index(:k)), plug"2'")
 
         return tn
     end
@@ -85,17 +86,17 @@ end
 # TODO test
 @testset "plug_like" begin end
 
-@testset "ind_at_plug" begin
+@testset "ind_at(::Plug)" begin
     @testset let
         tn = fixture1.constructor()
-        @test all(p -> ind_at_plug(tn, p) == fixture1.plugmap[p], fixture1.all_plugs)
-        # @test_throws ArgumentError ind_at_plug(tn, plug"3")
+        @test all(p -> ind_at(tn, p) == fixture1.plugmap[p], fixture1.all_plugs)
+        # @test_throws ArgumentError ind_at(tn, plug"3")
     end
 
     @testset let
         tn = fixture2.constructor()
-        @test all(p -> ind_at_plug(tn, p) == fixture2.plugmap[p], fixture2.all_plugs)
-        # @test_throws ArgumentError ind_at_plug(tn, plug"3")
+        @test all(p -> ind_at(tn, p) == fixture2.plugmap[p], fixture2.all_plugs)
+        # @test_throws ArgumentError ind_at(tn, plug"3")
     end
 end
 

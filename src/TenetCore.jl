@@ -15,12 +15,8 @@ import EinExprs: inds
 
 include("Utils.jl")
 
-@reexport using Networks
-import Networks: Interface
-import Networks: DelegatorTrait, DontDelegate, DelegateTo, delegator
-import Networks: ImplementorTrait, NotImplements, Implements
-import Networks: Effect, checkeffect, handle!
-using Networks: fallback
+using DelegatorTraits
+import DelegatorTraits: DelegatorTrait, ImplementorTrait, Implements, NotImplements
 
 # NOTE for developers
 # try using functions owned by us (e.g. `mysize` instead of `Base.size`)
@@ -30,31 +26,30 @@ export @unsafe_region
 
 include("Interfaces/TensorNetwork.jl")
 export TensorNetwork
-export tensors, tensor, hastensor, ntensors, all_tensors, all_tensors_iter, addtensor!, rmtensor!, replace_tensor!
-export inds, ind, hasind, ninds, all_inds, all_inds_iter, replace_ind!
+export tensors,
+    tensor, tensor_at, hastensor, ntensors, all_tensors, all_tensors_iter, addtensor!, rmtensor!, replace_tensor!
+export inds, ind, ind_at, hasind, ninds, all_inds, all_inds_iter, replace_ind!
 export tensors_with_inds, tensors_contain_inds, tensors_intersect_inds
 export inds_set, inds_parallel_to
 export size_inds, size_ind
 
-include("Interfaces/Taggable.jl")
-# include("Interfaces/Lattice.jl")
-@compat public Taggable
-export sites, site, hassite, nsites, all_sites, sites_like, site_like
-export links, link, haslink, nlinks, all_links, links_like, link_like
-export tensor_at, ind_at, site_at, link_at, size_link
-export tag!, untag!, replace_tag!
+include("Interfaces/Lattice.jl")
+@compat public Lattice
+export sites, site, site_at, hassite, nsites, all_sites, sites_like, site_like
+export bonds, bond, bond_at, hasbond, nbonds, all_bonds, bonds_like, bond_like
+export setsite!, setbond!, unsetsite!, unsetbond!
 
 include("Interfaces/Pluggable.jl")
 @compat public Pluggable
 export plugs,
     plug,
+    plug_at,
     all_plugs,
     all_plugs_iter,
     nplugs,
     hasplug,
     plugs_like,
     plug_like,
-    ind_at_plug,
     plugs_set_outputs,
     plugs_set_inputs,
     inds_set_physical,

@@ -1,12 +1,10 @@
 using UUIDs
 using Networks
-using Networks: Vertex, Edge, AddVertexEffect, RemoveVertexEffect, AddEdgeEffect, RemoveEdgeEffect, vertex, edge
+using Networks: Vertex, Edge, vertex, edge
 using QuantumTags
 using Muscle: ImmutableVector
 using Bijections
 using Serialization
-using Random
-using Base: IdSet
 
 const TensorBijection{V,T} = Bijection{V,T,Dict{V,T},IdDict{T,V}}
 const IndexBijection{E,I} = Bijection{E,I,Dict{E,I},Dict{I,E}}
@@ -62,7 +60,7 @@ function SimpleTensorNetwork(tensors; unsafe::Union{Nothing,UnsafeScope}=nothing
                 indmap[edge] = ind
                 edge
             else
-                inv(indmap)[ind]
+                indmap(ind)
             end
 
             Networks.link!(network, vertex, edge)
@@ -85,20 +83,20 @@ function Base.copy(tn::SimpleTensorNetwork)
     return new_tn
 end
 
-# Network delegation
-DelegatorTrait(::Network, ::SimpleTensorNetwork) = DelegateTo{:network}()
+# Network interface
+DelegatorTrait(::Network, ::SimpleTensorNetwork) = DelegateToField{:network}()
+
+Networks.vertex_at(tn::SimpleTensorNetwork, tensor::Tensor) = tn.tensormap(tensor)
+Networks.edge_at(tn::SimpleTensorNetwork, index::Index) = tn.indmap(index)
 
 # forbid adding vertices and edges to the network (use `addtensor!` instead)
-checkeffect(::SimpleTensorNetwork, ::AddVertexEffect) = throw(ErrorException("")) # TODO describe the error
-checkeffect(::SimpleTensorNetwork, ::AddEdgeEffect) = throw(ErrorException("")) # TODO describe the error
-checkeffect(::SimpleTensorNetwork, ::RemoveVertexEffect) = throw(ErrorException("")) # TODO describe the error
-checkeffect(::SimpleTensorNetwork, ::RemoveEdgeEffect) = throw(ErrorException("")) # TODO describe the error
-
-tensor_vertex(tn::SimpleTensorNetwork, tensor::Tensor) = inv(tn.tensormap)[tensor]
-index_edge(tn::SimpleTensorNetwork, index::Index) = inv(tn.indmap)[index]
-
-vertex_tensor(tn::SimpleTensorNetwork, vertex) = tn.tensormap[vertex]
-edge_index(tn::SimpleTensorNetwork, edge) = tn.indmap[edge]
+# TODO use the `IsAllowed` mechanism
+Networks.addvertex!(::SimpleTensorNetwork, _) = throw(ErrorException("")) # TODO describe the error
+Networks.addedge!(::SimpleTensorNetwork, _) = throw(ErrorException("")) # TODO describe the error
+Networks.rmvertex!(::SimpleTensorNetwork, _) = throw(ErrorException("")) # TODO describe the error
+Networks.rmedge!(::SimpleTensorNetwork, _) = throw(ErrorException("")) # TODO describe the error
+Networks.link!(::SimpleTensorNetwork, _, _) = throw(ErrorException("")) # TODO describe the error
+Networks.unlink!(::SimpleTensorNetwork, _, _) = throw(ErrorException("")) # TODO describe the error
 
 # UnsafeScopeable implementation
 ImplementorTrait(::UnsafeScopeable, ::SimpleTensorNetwork) = Implements()
@@ -138,18 +136,21 @@ hasind(tn::SimpleTensorNetwork, index) = hasvalue(tn.indmap, index)
 ntensors(tn::SimpleTensorNetwork) = length(tn.tensormap)
 ninds(tn::SimpleTensorNetwork) = length(tn.indmap)
 
+tensor_at(tn::SimpleTensorNetwork, vertex::Vertex) = tn.tensormap[vertex]
+ind_at(tn::SimpleTensorNetwork, edge::Edge) = tn.indmap[edge]
+
 function size_inds(tn::SimpleTensorNetwork)
     return Dict{Index,Int}(index => size(tn, index) for index in all_inds_iter(tn))
 end
 
 function size_ind(tn::SimpleTensorNetwork, index::Index)
-    vertex_set = edge_incidents(tn, edge(tn, index))
-    return size(tensor(tn; vertex=first(vertex_set)), index)
+    vertex_set = edge_incidents(tn, edge_at(tn, index))
+    return size(tensor(tn; at=first(vertex_set)), index)
 end
 
 function tensors_contain_inds(tn::SimpleTensorNetwork, index::Index)
     @assert hasind(tn, index) "index $index not found in tensor network"
-    vertex_set = edge_incidents(tn, edge(tn, index))
+    vertex_set = edge_incidents(tn, edge_at(tn, index))
     return collect(
         Iterators.map(vertex_set) do vertex
             tn.tensormap[vertex]
@@ -165,8 +166,7 @@ function tensors_contain_inds(tn::SimpleTensorNetwork, indices)
     return target_tensors
 end
 
-## mutating methods
-function addtensor_inner!(tn::SimpleTensorNetwork, tensor::Tensor)
+function addtensor!(tn::SimpleTensorNetwork, tensor::Tensor)
     hastensor(tn, tensor) && return tn
 
     # check index sizes if there isn't an active `UnsafeScope` in the Tensor Network
@@ -191,7 +191,7 @@ function addtensor_inner!(tn::SimpleTensorNetwork, tensor::Tensor)
             tn.indmap[target_edge] = ind
             target_edge
         else
-            edge(tn, ind)
+            edge_at(tn, ind)
         end
 
         Networks.link!(tn.network, vertex, target_edge)
@@ -203,9 +203,10 @@ function addtensor_inner!(tn::SimpleTensorNetwork, tensor::Tensor)
     return tn
 end
 
-## `rmtensor!`
-function rmtensor_inner!(tn::SimpleTensorNetwork, tensor::Tensor)
-    target_vertex = vertex(tn, tensor)
+function rmtensor!(tn::SimpleTensorNetwork, tensor::Tensor)
+    hastensor(tn, tensor) || throw(ArgumentError("Tensor not found"))
+
+    target_vertex = vertex_at(tn, tensor)
     edge_set = vertex_incidents(tn, target_vertex)
 
     # remove tensor
@@ -215,7 +216,7 @@ function rmtensor_inner!(tn::SimpleTensorNetwork, tensor::Tensor)
     # remove indices if they were removed
     # TODO maybe we should refactor `rmtensor!` to check if we use a `Network` underneath and then, use the `RemoveVertexEffect` and `RemoveEdgeEffect` effects?
     for edge in edge_set
-        if !hasedge(tn, tn.network)
+        if !hasedge(tn, edge)
             delete!(tn.indmap, edge)
         end
     end
@@ -226,11 +227,12 @@ function rmtensor_inner!(tn::SimpleTensorNetwork, tensor::Tensor)
     return tn
 end
 
-## `replace_tensor!`
-function replace_tensor_inner!(tn::SimpleTensorNetwork, old_tensor, new_tensor)
+function replace_tensor!(tn::SimpleTensorNetwork, old_tensor, new_tensor)
+    hastensor(tn, old_tensor) || throw(ArgumentError("Old tensor not found"))
+    hastensor(tn, new_tensor) && throw(ArgumentError("New tensor already exists in the network"))
     old_tensor === new_tensor && return tn
 
-    tn.tensormap[vertex(tn, old_tensor)] = new_tensor
+    tn.tensormap[vertex_at(tn, old_tensor)] = new_tensor
 
     # tensors have changed, invalidate cache and reconstruct on next `tensors` call
     invalidate!(tn.sorted_tensors)
@@ -238,51 +240,28 @@ function replace_tensor_inner!(tn::SimpleTensorNetwork, old_tensor, new_tensor)
     return tn
 end
 
-## `replace_ind!`
-function replace_ind_inner!(tn::SimpleTensorNetwork, old_index, new_index)
+function replace_ind!(tn::SimpleTensorNetwork, old_index, new_index)
+    hasind(tn, old_index) || throw(ArgumentError("Index $old_index not found in tensor network"))
+    hasind(tn, new_index) && throw(ArgumentError("Index $new_index already exists in the network"))
     old_index === new_index && return tn
 
     # replace index
-    target_edge = edge(tn, old_index)
+    target_edge = edge_at(tn, old_index)
     tn.indmap[target_edge] = new_index
 
     # TODO should we move this to the `handle!` method?
     # update indices in involved tensors
     vertex_set = edge_incidents(tn, target_edge)
     for vertex in vertex_set
-        old_tensor = tensor(tn; vertex)
+        old_tensor = tensor_at(tn, vertex)
         new_tensor = replace(old_tensor, old_index => new_index)
-        replace_tensor_inner!(tn, old_tensor, new_tensor)
+        replace_tensor!(tn, old_tensor, new_tensor)
     end
 
     # tensors have changed, invalidate cache and reconstruct on next `tensors` call
     invalidate!(tn.sorted_tensors)
 
     return tn
-end
-
-## `slice!`
-function slice_inner!(tn::SimpleTensorNetwork, ind, i)
-    target_edge = edge(tn, ind)
-
-    # update tensors
-    for old_tensor in tensors(tn; contain=ind)
-        new_tensor = selectdim(old_tensor, ind, i)
-        replace_tensor_inner!(tn, old_tensor, new_tensor)
-    end
-
-    # update network: if `i` is an integer, the index disappears and the edge is removed
-    if i isa Integer
-        rmedge!(tn.network, target_edge)
-        delete!(tn.indmap, target_edge)
-    end
-
-    return tn
-end
-
-## `fuse!`
-function checkeffect(tn::SimpleTensorNetwork, e::FuseEffect)
-    @argcheck all(Base.Fix1(hasind, tn), e.inds)
 end
 
 # derived methods
@@ -291,6 +270,7 @@ function Base.isapprox(a::SimpleTensorNetwork, b::SimpleTensorNetwork; kwargs...
     return all(((x, y),) -> isapprox(x, y; kwargs...), zip(tensors(a), tensors(b)))
 end
 
+# TODO we need to keep the same tensor vertices... fix serialization in Bijection!
 function Serialization.serialize(s::AbstractSerializer, obj::SimpleTensorNetwork)
     Serialization.writetag(s.io, Serialization.OBJECT_TAG)
     serialize(s, SimpleTensorNetwork)
