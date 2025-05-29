@@ -69,12 +69,18 @@ all_bonds(lattice, ::DontDelegate) = throw(MethodError(all_bonds, (lattice,)))
 ## `all_sites_iter`
 all_sites_iter(lattice) = all_sites_iter(lattice, DelegatorTrait(Lattice(), lattice))
 all_sites_iter(lattice, ::DelegateToField) = all_sites_iter(delegator(Lattice(), lattice))
-all_sites_iter(lattice, ::DontDelegate) = throw(MethodError(all_sites_iter, (lattice,)))
+function all_sites_iter(lattice, ::DontDelegate)
+    fallback(all_sites_iter)
+    all_sites(lattice)
+end
 
 ## `all_bonds_iter`
 all_bonds_iter(lattice) = all_bonds_iter(lattice, DelegatorTrait(Lattice(), lattice))
 all_bonds_iter(lattice, ::DelegateToField) = all_bonds_iter(delegator(Lattice(), lattice))
-all_bonds_iter(lattice, ::DontDelegate) = throw(MethodError(all_bonds_iter, (lattice,)))
+function all_bonds_iter(lattice, ::DontDelegate)
+    fallback(all_bonds_iter)
+    all_bonds(lattice)
+end
 
 ## `hassite`
 hassite(lattice, site) = hassite(lattice, site, DelegatorTrait(Lattice(), lattice))
@@ -89,7 +95,9 @@ hasbond(lattice, bond) = hasbond(lattice, bond, DelegatorTrait(Lattice(), lattic
 hasbond(lattice, bond, ::DelegateToField) = hasbond(delegator(Lattice(), lattice), bond)
 function hasbond(lattice, bond, ::DontDelegate)
     fallback(hasbond)
-    any(Base.Fix1(is_bond_equal, bond), all_bonds_iter(lattice))
+    # TODO should we use `==` or sth like `is_bond_equal`?
+    # any(Base.Fix1(is_bond_equal, bond), all_bonds_iter(lattice))
+    any(==(bond), all_bonds_iter(lattice))
 end
 
 ## `nsites`
