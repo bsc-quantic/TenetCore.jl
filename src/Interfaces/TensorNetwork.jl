@@ -77,7 +77,7 @@ function fuse! end
 
 # implementation
 ## `tensors`
-tensors(tn; kwargs...) = tensors(sort_nt(values(kwargs)), tn)
+tensors(tn::AbstractTensorNetwork; kwargs...) = tensors(sort_nt(values(kwargs)), tn)
 tensors(::@NamedTuple{}, tn) = all_tensors(tn)
 
 # TODO fix grammar error on naming
@@ -94,7 +94,7 @@ tensor(kwargs::NamedTuple, tn) = only(tensors(kwargs, tn))
 tensor(kwargs::NamedTuple{(:at,)}, tn) = tensor_at(tn, kwargs.at)
 
 ## `inds`
-inds(tn; kwargs...) = inds(sort_nt(values(kwargs)), tn)
+inds(tn::AbstractTensorNetwork; kwargs...) = inds(sort_nt(values(kwargs)), tn)
 inds(::@NamedTuple{}, tn) = all_inds(tn) # inds((;), tn, DelegatorTrait(TensorNetwork(), tn))
 inds(kwargs::@NamedTuple{set::Symbol}, tn) = inds_set(tn, kwargs.set)
 inds(kwargs::NamedTuple{(:parallel_to,)}, tn) = inds_parallel_to(tn, kwargs.parallel_to)
