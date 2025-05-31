@@ -21,7 +21,7 @@ struct TensorNetwork <: Interface end
 # query methods
 ## in reality, the only required methods are `all_*` and the mutating methods
 function tensors end
-function inds end
+# function inds end # WARN moved to `Operations/AbstractTensorNetwork.jl` to avoid type-piracy
 
 function tensor end
 function ind end
@@ -77,7 +77,7 @@ function fuse! end
 
 # implementation
 ## `tensors`
-tensors(tn::AbstractTensorNetwork; kwargs...) = tensors(sort_nt(values(kwargs)), tn)
+tensors(tn; kwargs...) = tensors(sort_nt(values(kwargs)), tn)
 tensors(::@NamedTuple{}, tn) = all_tensors(tn)
 
 # TODO fix grammar error on naming
@@ -94,11 +94,7 @@ tensor(kwargs::NamedTuple, tn) = only(tensors(kwargs, tn))
 tensor(kwargs::NamedTuple{(:at,)}, tn) = tensor_at(tn, kwargs.at)
 
 ## `inds`
-inds(tn::AbstractTensorNetwork; kwargs...) = inds(sort_nt(values(kwargs)), tn)
-inds(::@NamedTuple{}, tn) = all_inds(tn) # inds((;), tn, DelegatorTrait(TensorNetwork(), tn))
-inds(kwargs::@NamedTuple{set::Symbol}, tn) = inds_set(tn, kwargs.set)
-inds(kwargs::NamedTuple{(:parallel_to,)}, tn) = inds_parallel_to(tn, kwargs.parallel_to)
-inds(kwargs::NamedTuple{(:parallelto,)}, tn) = inds_parallel_to(tn, kwargs.parallelto)
+# NOTE moved to `Operations/AbstractTensorNetwork.jl` to avoid type-piracy
 
 ### singular version of `inds`
 ind(tn; kwargs...) = ind(sort_nt(values(kwargs)), tn)

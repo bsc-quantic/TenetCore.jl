@@ -9,6 +9,12 @@ function Base.show(io::IO, tn::T) where {T<:AbstractTensorNetwork}
     print(io, "$T (#tensors=$(ntensors(tn)), #inds=$(ninds(tn)))")
 end
 
+inds(tn::AbstractTensorNetwork; kwargs...) = inds(sort_nt(values(kwargs)), tn)
+inds(::@NamedTuple{}, tn) = all_inds(tn) # inds((;), tn, DelegatorTrait(TensorNetwork(), tn))
+inds(kwargs::@NamedTuple{set::Symbol}, tn) = inds_set(tn, kwargs.set)
+inds(kwargs::NamedTuple{(:parallel_to,)}, tn) = inds_parallel_to(tn, kwargs.parallel_to)
+inds(kwargs::NamedTuple{(:parallelto,)}, tn) = inds_parallel_to(tn, kwargs.parallelto)
+
 Base.in(i::Index, tn::AbstractTensorNetwork) = hasind(tn, i)
 Base.in(tensor::Tensor, tn::AbstractTensorNetwork) = hastensor(tn, tensor)
 
