@@ -133,7 +133,7 @@ all_sites_iter(tn::GenericTensorNetwork) = keys(tn.sitemap)
 all_bond_iter(tn::GenericTensorNetwork) = Iterators.filter(isbond, keys(tn.linkmap))
 
 hassite(tn::GenericTensorNetwork, site) = has_vertex_tag(tn, site)
-hasbond(tn::GenericTensorNetwork, link) = has_edge_tag(tn.linkmap, link)
+hasbond(tn::GenericTensorNetwork, link) = has_edge_tag(tn, link)
 
 nsites(::@NamedTuple{}, tn::GenericTensorNetwork) = length(tn.sitemap)
 nbonds(::@NamedTuple{}, tn::GenericTensorNetwork) = count(isplug, edge_tags(tn))
