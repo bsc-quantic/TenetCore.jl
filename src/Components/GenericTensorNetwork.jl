@@ -3,6 +3,7 @@ using Bijections
 using Networks
 using Random
 
+# TODO use dictionary with parameterized types
 const SiteBijection = Bijection{Site,Vertex{UUID},Dict{Site,Vertex{UUID}},Dict{Vertex{UUID},Site}}
 const LinkBijection = Bijection{Link,Edge{UUID},Dict{Link,Edge{UUID}},Dict{Edge{UUID},Link}}
 # const BondBijection = Bijection{Bond,Edge{UUID},Dict{Bond,Edge{UUID}},Dict{Edge{UUID},Bond}}
