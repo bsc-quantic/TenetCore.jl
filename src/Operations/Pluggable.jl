@@ -41,9 +41,12 @@ function align!(a, ioa, b, iob)
 
     target_plugs_a = plugs(a; set=ioa)
     target_plugs_b = plugs(b; set=iob)
+    do_dual = ioa == iob ? false : true
+    @assert issetequal(target_plugs_a, do_dual ? adjoint.(target_plugs_b) : target_plugs_b)
 
-    replacements = map(zip(target_plugs_a, target_plugs_b)) do (plug_a, plug_b)
-        ind(b; at=plug_b) => ind(a; at=plug_a)
+    replacements = map(target_plugs_a) do plug_a
+        plug_b = do_dual ? plug_a' : plug_a
+        ind_at(b, plug_b) => ind_at(a, plug_a)
     end
 
     if issetequal(first.(replacements), last.(replacements))
