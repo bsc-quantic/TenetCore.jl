@@ -55,7 +55,9 @@ export plugs,
     inds_set_physical,
     inds_set_virtual,
     inds_set_inputs,
-    inds_set_outputs
+    inds_set_outputs,
+    setplug!,
+    unsetplug!
 
 # aliases to `Base` are in "src/Operations/AbstractTensorNetwork.jl"
 include("Operations/TensorNetwork.jl")
