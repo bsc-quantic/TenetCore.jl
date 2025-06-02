@@ -229,8 +229,8 @@ end
 
 function replace_tensor!(tn::SimpleTensorNetwork, old_tensor, new_tensor)
     hastensor(tn, old_tensor) || throw(ArgumentError("Old tensor not found"))
-    hastensor(tn, new_tensor) && throw(ArgumentError("New tensor already exists in the network"))
     old_tensor === new_tensor && return tn
+    hastensor(tn, new_tensor) && throw(ArgumentError("New tensor already exists in the network"))
 
     tn.tensormap[vertex_at(tn, old_tensor)] = new_tensor
 
@@ -242,8 +242,8 @@ end
 
 function replace_ind!(tn::SimpleTensorNetwork, old_index, new_index)
     hasind(tn, old_index) || throw(ArgumentError("Index $old_index not found in tensor network"))
-    hasind(tn, new_index) && throw(ArgumentError("Index $new_index already exists in the network"))
     old_index === new_index && return tn
+    hasind(tn, new_index) && throw(ArgumentError("Index $new_index already exists in the network"))
 
     # replace index
     target_edge = edge_at(tn, old_index)
