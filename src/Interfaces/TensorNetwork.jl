@@ -111,7 +111,13 @@ all_inds(tn) = all_inds(tn, DelegatorTrait(TensorNetwork(), tn))
 all_inds(tn, ::DelegateToField) = all_inds(delegator(TensorNetwork(), tn))
 function all_inds(tn, ::DontDelegate)
     fallback(all_inds)
-    mapreduce(inds, ∪, tensors(tn); init=Index[])
+    _inds = Set{Index}()
+    for tensor in all_tensors(tn)
+        for ind in inds(tensor)
+            push!(_inds, ind)
+        end
+    end
+    return collect(_inds)
 end
 
 ## `all_tensors_iter`
