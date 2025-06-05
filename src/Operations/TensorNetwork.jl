@@ -116,7 +116,7 @@ end
 
 Rename indices in the `TensorNetwork` to a new set of indices. It is mainly used to avoid index name conflicts when connecting Tensor Networks.
 """
-function resetinds!(tn, method=:gensymclean; kwargs...)
+function resetinds!(tn, method=:gensymnew; kwargs...)
     new_name_f = if method === :suffix
         (ind) -> Index(Symbol(ind, get(kwargs, :suffix, '\'')))
     elseif method === :gensymwrap
@@ -138,9 +138,8 @@ function resetinds!(tn, method=:gensymclean; kwargs...)
         inds(tn)
     end
 
-    for ind in _inds
-        replace!(tn, ind => new_name_f(ind))
-    end
+    old_new = Dict(ind => new_name_f(ind) for ind in _inds)
+    replace_ind!(tn, old_new)
 
     return tn
 end

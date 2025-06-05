@@ -307,6 +307,10 @@ replace_ind!(tn, old, new) = replace_ind!(tn, old, new, DelegatorTrait(TensorNet
 replace_ind!(tn, old, new, ::DelegateToField) = replace_ind!(delegator(TensorNetwork(), tn), old, new)
 replace_ind!(tn, old, new, ::DontDelegate) = throw(MethodError(replace_ind!, (tn, old, new)))
 
+replace_ind!(tn, old_new) = replace_ind!(tn, old_new, DelegatorTrait(TensorNetwork(), tn))
+replace_ind!(tn, old_new, ::DelegateToField) = replace_ind!(delegator(TensorNetwork(), tn), old_new)
+replace_ind!(tn, old_new, ::DontDelegate) = throw(MethodError(replace_ind!, (tn, old_new)))
+
 ## `slice!`
 # TODO check that `ind` is present
 slice!(tn, ind, i) = slice!(tn, ind, i, DelegatorTrait(TensorNetwork(), tn))

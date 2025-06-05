@@ -264,6 +264,29 @@ function replace_ind!(tn::SimpleTensorNetwork, old_index, new_index)
     return tn
 end
 
+function replace_ind!(tn::SimpleTensorNetwork, old_new::AbstractDict)
+    isdisjoint(values(old_new), inds(tn)) || throw(ArgumentError("New indices must not be already present"))
+
+    # update indices
+    for (old_ind, new_ind) in old_new
+        _edge = edge_at(tn, old_ind)
+        tn.indmap[_edge] = new_ind
+    end
+
+    # update tensors
+    for tensor in all_tensors(tn)
+        if !isdisjoint(inds(tensor), keys(old_new))
+            new_inds = [get(old_new, ind, ind) for ind in inds(tensor)]
+            new_tensor = Tensor(parent(tensor), new_inds)
+            replace_tensor!(tn, tensor, new_tensor)
+        end
+    end
+
+    invalidate!(tn.sorted_tensors)
+
+    return tn
+end
+
 # derived methods
 Base.:(==)(a::SimpleTensorNetwork, b::SimpleTensorNetwork) = all(splat(==), zip(tensors(a), tensors(b)))
 function Base.isapprox(a::SimpleTensorNetwork, b::SimpleTensorNetwork; kwargs...)
