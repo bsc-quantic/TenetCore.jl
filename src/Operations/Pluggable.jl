@@ -47,13 +47,13 @@ function align!(a, ioa, b, iob)
     replacements = map(target_plugs_a) do plug_a
         plug_b = do_dual ? plug_a' : plug_a
         ind_at(b, plug_b) => ind_at(a, plug_a)
-    end
+    end |> Dict
 
-    if issetequal(first.(replacements), last.(replacements))
+    if issetequal(keys(replacements), values(replacements))
         return b
     end
 
-    replace!(b, replacements)
+    replace_ind!(b, replacements)
 
     return a, b
 end
